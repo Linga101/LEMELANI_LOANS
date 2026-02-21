@@ -102,7 +102,19 @@ function redirect($url) {
  */
 function site_url($path = '') {
     $path = ltrim($path, '/');
-    return rtrim(SITE_URL, '/') . '/' . $path;
+    $base = rtrim(SITE_URL, '/');
+
+    // Prevent duplicate path segments when SITE_URL already contains a folder
+    // (e.g. when in admin area SITE_URL ends with "/admin"). If the path
+    // being requested already begins with that same segment, strip it out
+    // so that we don't end up with "/admin/admin/foo.php" which would 404.
+    $baseSegments = explode('/', $base);
+    $lastSegment = end($baseSegments);
+    if ($lastSegment && str_starts_with($path, $lastSegment . '/')) {
+        $path = substr($path, strlen($lastSegment) + 1);
+    }
+
+    return $base . '/' . $path;
 }
 
 function is_logged_in() {
