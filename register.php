@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Store form data for repopulation
     $form_data = compact('national_id', 'full_name', 'email', 'phone');
     
-    // Validation
+    // Validation stage 1
     if (empty($national_id)) {
         $errors[] = "National ID is required";
     }
@@ -40,7 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($phone)) {
         $errors[] = "Phone number is required";
     }
-    
+
+    // Validation stage 3 (passwords)
     if (empty($password)) {
         $errors[] = "Password is required";
     } elseif (strlen($password) < 6) {
@@ -50,47 +51,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($password !== $confirm_password) {
         $errors[] = "Passwords do not match";
     }
-    
-    // Handle file uploads
+
+    // Handle image data (camera or file)
     $selfie_path = null;
     $id_document_path = null;
-    
-    if (isset($_FILES['selfie']) && $_FILES['selfie']['error'] === UPLOAD_ERR_OK) {
+
+    // helper for base64->file
+    function save_base64_image($data, $dir, $prefix) {
+        if (preg_match('/^data:image\/([^;]+);base64,(.+)$/', $data, $m)) {
+            $ext = $m[1];
+            $base64 = $m[2];
+            $decoded = base64_decode($base64);
+            if ($decoded === false) return null;
+            $name = uniqid() . "_{$prefix}." . $ext;
+            if (file_put_contents($dir . $name, $decoded) !== false) {
+                return $name;
+            }
+        }
+        return null;
+    }
+
+    // selfie
+    if (!empty($_POST['selfie_data'])) {
+        $saved = save_base64_image($_POST['selfie_data'], SELFIE_UPLOAD_DIR, 'selfie');
+        if ($saved) {
+            $selfie_path = 'selfies/' . $saved;
+        } else {
+            $errors[] = "Invalid selfie image data";
+        }
+    } elseif (isset($_FILES['selfie']) && $_FILES['selfie']['error'] === UPLOAD_ERR_OK) {
+        // fallback to file upload
         $selfie_ext = pathinfo($_FILES['selfie']['name'], PATHINFO_EXTENSION);
         $allowed_ext = ['jpg', 'jpeg', 'png'];
-        
         if (!in_array(strtolower($selfie_ext), $allowed_ext)) {
             $errors[] = "Selfie must be JPG or PNG";
-        } elseif ($_FILES['selfie']['size'] > 5000000) { // 5MB
+        } elseif ($_FILES['selfie']['size'] > 5000000) {
             $errors[] = "Selfie file too large (max 5MB)";
         } else {
             $selfie_name = uniqid() . '_selfie.' . $selfie_ext;
-            $selfie_path = 'selfies/' . $selfie_name;
-            
-            if (!move_uploaded_file($_FILES['selfie']['tmp_name'], SELFIE_UPLOAD_DIR . $selfie_name)) {
+            if (move_uploaded_file($_FILES['selfie']['tmp_name'], SELFIE_UPLOAD_DIR . $selfie_name)) {
+                $selfie_path = 'selfies/' . $selfie_name;
+            } else {
                 $errors[] = "Failed to upload selfie";
-                $selfie_path = null;
             }
         }
     } else {
         $errors[] = "Selfie is required for verification";
     }
-    
-    if (isset($_FILES['id_document']) && $_FILES['id_document']['error'] === UPLOAD_ERR_OK) {
+
+    // id document
+    if (!empty($_POST['id_document_data'])) {
+        $saved = save_base64_image($_POST['id_document_data'], ID_UPLOAD_DIR, 'id');
+        if ($saved) {
+            $id_document_path = 'ids/' . $saved;
+        } else {
+            $errors[] = "Invalid ID document image data";
+        }
+    } elseif (isset($_FILES['id_document']) && $_FILES['id_document']['error'] === UPLOAD_ERR_OK) {
         $id_ext = pathinfo($_FILES['id_document']['name'], PATHINFO_EXTENSION);
         $allowed_ext = ['jpg', 'jpeg', 'png', 'pdf'];
-        
         if (!in_array(strtolower($id_ext), $allowed_ext)) {
             $errors[] = "ID document must be JPG, PNG or PDF";
-        } elseif ($_FILES['id_document']['size'] > 5000000) { // 5MB
+        } elseif ($_FILES['id_document']['size'] > 5000000) {
             $errors[] = "ID document file too large (max 5MB)";
         } else {
             $id_name = uniqid() . '_id.' . $id_ext;
-            $id_document_path = 'ids/' . $id_name;
-            
-            if (!move_uploaded_file($_FILES['id_document']['tmp_name'], ID_UPLOAD_DIR . $id_name)) {
+            if (move_uploaded_file($_FILES['id_document']['tmp_name'], ID_UPLOAD_DIR . $id_name)) {
+                $id_document_path = 'ids/' . $id_name;
+            } else {
                 $errors[] = "Failed to upload ID document";
-                $id_document_path = null;
             }
         }
     } else {
@@ -166,6 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!-- FontAwesome icons -->
     <link rel="stylesheet" href="assets/css/fontawesome-all.min.css" />
     <style>
+        /* container/card same as before */
         .auth-container {
             min-height: 100vh;
             display: flex;
@@ -198,6 +228,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 1.75rem;
             margin-bottom: 0.5rem;
         }
+
+        /* multi‑step form styles */
+        .progress-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .progress-step {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            background: var(--border-color);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .progress-step.active {
+            background: var(--primary-green);
+            color: #fff;
+        }
+
+        .form-step {
+            display: none;
+        }
+
+        .form-step.active {
+            display: block;
+        }
+
+        .form-navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1.5rem;
+        }
+
+        .camera-container {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .camera-preview {
+            width: 100%;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .capture-btn {
+            margin-top: 0.5rem;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    
 
         .auth-subtitle {
             color: var(--text-secondary);
@@ -290,72 +378,91 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             <?php endif; ?>
 
-            <form method="POST" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label for="national_id" class="form-label">National ID *</label>
-                    <input type="text" id="national_id" name="national_id" class="form-control" 
-                           value="<?php echo htmlspecialchars($form_data['national_id'] ?? ''); ?>" required>
-                    <small class="form-text">Enter your Malawi National ID number</small>
+            <form id="registerForm" method="POST" enctype="multipart/form-data">
+                <!-- progress bubbles -->
+                <div class="progress-container">
+                    <div class="progress-step active" data-step="1">1</div>
+                    <div class="progress-step" data-step="2">2</div>
+                    <div class="progress-step" data-step="3">3</div>
                 </div>
 
-                <div class="form-group">
-                    <label for="full_name" class="form-label">Full Name *</label>
-                    <input type="text" id="full_name" name="full_name" class="form-control" 
-                           value="<?php echo htmlspecialchars($form_data['full_name'] ?? ''); ?>" required>
+                <!-- step 1: personal details -->
+                <div class="form-step active" data-step="1">
+                    <div class="form-group">
+                        <label for="national_id" class="form-label">National ID *</label>
+                        <input type="text" id="national_id" name="national_id" class="form-control" 
+                               value="<?php echo htmlspecialchars($form_data['national_id'] ?? ''); ?>" required>
+                        <small class="form-text">Enter your Malawi National ID number</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="full_name" class="form-label">Full Name *</label>
+                        <input type="text" id="full_name" name="full_name" class="form-control" 
+                               value="<?php echo htmlspecialchars($form_data['full_name'] ?? ''); ?>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email Address *</label>
+                        <input type="email" id="email" name="email" class="form-control" 
+                               value="<?php echo htmlspecialchars($form_data['email'] ?? ''); ?>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone" class="form-label">Phone Number *</label>
+                        <input type="tel" id="phone" name="phone" class="form-control" 
+                               placeholder="+265..." value="<?php echo htmlspecialchars($form_data['phone'] ?? ''); ?>" required>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="email" class="form-label">Email Address *</label>
-                    <input type="email" id="email" name="email" class="form-control" 
-                           value="<?php echo htmlspecialchars($form_data['email'] ?? ''); ?>" required>
+                <!-- step 2: photos via camera -->
+                <div class="form-step" data-step="2">
+                    <div class="form-group">
+                        <label class="form-label">Capture National ID Document *</label>
+                        <div class="camera-container">
+                            <video id="idVideo" class="camera-preview" autoplay playsinline></video>
+                            <canvas id="idCanvas" class="hidden"></canvas>
+                        </div>
+                        <button type="button" class="btn capture-btn" id="captureIdBtn">Capture ID</button>
+                        <input type="hidden" name="id_document_data" id="id_document_data">
+                        <img id="idPreview" class="camera-preview hidden" alt="ID snapshot">
+                        <p><small>Or upload file: <input type="file" name="id_document" accept="image/*,.pdf"></small></p>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Capture Selfie *</label>
+                        <div class="camera-container">
+                            <video id="selfieVideo" class="camera-preview" autoplay playsinline></video>
+                            <canvas id="selfieCanvas" class="hidden"></canvas>
+                        </div>
+                        <button type="button" class="btn capture-btn" id="captureSelfieBtn">Capture Selfie</button>
+                        <input type="hidden" name="selfie_data" id="selfie_data">
+                        <img id="selfiePreview" class="camera-preview hidden" alt="Selfie snapshot">
+                        <p><small>Or upload file: <input type="file" name="selfie" accept="image/*"></small></p>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="phone" class="form-label">Phone Number *</label>
-                    <input type="tel" id="phone" name="phone" class="form-control" 
-                           placeholder="+265..." value="<?php echo htmlspecialchars($form_data['phone'] ?? ''); ?>" required>
+                <!-- step 3: password creation -->
+                <div class="form-step" data-step="3">
+                    <div class="form-group">
+                        <label for="password" class="form-label">Password *</label>
+                        <input type="password" id="password" name="password" class="form-control" 
+                               minlength="6" required>
+                        <small class="form-text">Minimum 6 characters</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirm_password" class="form-label">Confirm Password *</label>
+                        <input type="password" id="confirm_password" name="confirm_password" class="form-control" required>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="password" class="form-label">Password *</label>
-                    <input type="password" id="password" name="password" class="form-control" 
-                           minlength="6" required>
-                    <small class="form-text">Minimum 6 characters</small>
+                <!-- navigation buttons -->
+                <div class="form-navigation">
+                    <button type="button" class="btn btn-secondary" id="prevBtn" disabled>Previous</button>
+                    <button type="button" class="btn btn-primary" id="nextBtn">Next</button>
+                    <button type="submit" class="btn btn-success hidden" id="submitBtn">Register</button>
                 </div>
 
-                <div class="form-group">
-                    <label for="confirm_password" class="form-label">Confirm Password *</label>
-                    <input type="password" id="confirm_password" name="confirm_password" class="form-control" required>
-                </div>
-
-                <div class="file-upload-wrapper">
-                    <label class="form-label">Selfie Photo *</label>
-                    <input type="file" id="selfie" name="selfie" class="file-upload-input" 
-                           accept="image/jpeg,image/png" required>
-                    <label for="selfie" class="file-upload-label" id="selfie-label">
-                        <div class="file-upload-icon"><i class="fas fa-camera"></i></div>
-                        <div>Click to upload your selfie</div>
-                        <small class="form-text">JPG or PNG, max 5MB</small>
-                        <div class="file-name" id="selfie-name"></div>
-                    </label>
-                </div>
-
-                <div class="file-upload-wrapper">
-                    <label class="form-label">National ID Document *</label>
-                    <input type="file" id="id_document" name="id_document" class="file-upload-input" 
-                           accept="image/jpeg,image/png,application/pdf" required>
-                    <label for="id_document" class="file-upload-label" id="id-label">
-                        <div class="file-upload-icon"><i class="fas fa-id-card"></i></div>
-                        <div>Click to upload your National ID</div>
-                        <small class="form-text">JPG, PNG or PDF, max 5MB</small>
-                        <div class="file-name" id="id-name"></div>
-                    </label>
-                </div>
-
-                <button type="submit" class="btn btn-primary btn-block btn-lg">
-                    Create Account
-                </button>
-            </form>
 
             <div class="auth-footer">
                 Already have an account? <a href="<?php echo site_url('login.php'); ?>">Login here</a>
@@ -364,46 +471,110 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <script>
-        // File upload preview
-        document.getElementById('selfie').addEventListener('change', function(e) {
-            const fileName = e.target.files[0]?.name;
-            const label = document.getElementById('selfie-label');
-            const nameDiv = document.getElementById('selfie-name');
-            
-            if (fileName) {
-                nameDiv.textContent = '✓ ' + fileName;
-                label.classList.add('has-file');
-            } else {
-                nameDiv.textContent = '';
-                label.classList.remove('has-file');
+        // multi-step navigation logic
+        const steps = document.querySelectorAll('.form-step');
+        const progressSteps = document.querySelectorAll('.progress-step');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        let currentStep = 1;
+
+        function showStep(n) {
+            steps.forEach(s => s.classList.remove('active'));
+            progressSteps.forEach(p => p.classList.remove('active'));
+            document.querySelector('.form-step[data-step="' + n + '"]').classList.add('active');
+            document.querySelector('.progress-step[data-step="' + n + '"]').classList.add('active');
+            prevBtn.disabled = (n === 1);
+            nextBtn.style.display = (n === steps.length ? 'none' : 'inline-block');
+            submitBtn.classList.toggle('hidden', n !== steps.length);
+        }
+
+        nextBtn.addEventListener('click', () => {
+            // basic validation when moving forward
+            if (currentStep === 1) {
+                const inputs = steps[0].querySelectorAll('input');
+                for (let inp of inputs) {
+                    if (!inp.checkValidity()) {
+                        inp.reportValidity();
+                        return;
+                    }
+                }
+            }
+            if (currentStep === 2) {
+                // require at least one of the camera captures or file inputs
+                const selfieData = document.getElementById('selfie_data').value;
+                const idData = document.getElementById('id_document_data').value;
+                const fileSelfie = document.querySelector('input[name="selfie"]').files[0];
+                const fileId = document.querySelector('input[name="id_document"]').files[0];
+                if (!selfieData && !fileSelfie) {
+                    alert('Please capture or upload a selfie');
+                    return;
+                }
+                if (!idData && !fileId) {
+                    alert('Please capture or upload your ID document');
+                    return;
+                }
+            }
+            if (currentStep < steps.length) {
+                currentStep++;
+                showStep(currentStep);
+            }
+        });
+        prevBtn.addEventListener('click', () => {
+            if (currentStep > 1) {
+                currentStep--;
+                showStep(currentStep);
             }
         });
 
-        document.getElementById('id_document').addEventListener('change', function(e) {
-            const fileName = e.target.files[0]?.name;
-            const label = document.getElementById('id-label');
-            const nameDiv = document.getElementById('id-name');
-            
-            if (fileName) {
-                nameDiv.textContent = '✓ ' + fileName;
-                label.classList.add('has-file');
-            } else {
-                nameDiv.textContent = '';
-                label.classList.remove('has-file');
+        // camera initialization
+        async function initCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                document.getElementById('selfieVideo').srcObject = stream;
+                document.getElementById('idVideo').srcObject = stream;
+            } catch (e) {
+                console.warn('Camera not available', e);
             }
+        }
+
+        function capture(videoElem, canvasElem, hiddenInput) {
+            const video = document.getElementById(videoElem);
+            const canvas = document.getElementById(canvasElem);
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            const dataUrl = canvas.toDataURL('image/png');
+            document.getElementById(hiddenInput).value = dataUrl;
+            // show preview if available
+            const previewId = videoElem.replace('Video','Preview');
+            const img = document.getElementById(previewId);
+            if (img) {
+                img.src = dataUrl;
+                img.classList.remove('hidden');
+            }
+        }
+
+        document.getElementById('captureSelfieBtn').addEventListener('click', () => {
+            capture('selfieVideo', 'selfieCanvas', 'selfie_data');
+        });
+        document.getElementById('captureIdBtn').addEventListener('click', () => {
+            capture('idVideo', 'idCanvas', 'id_document_data');
         });
 
-        // Password match validation
+        // password confirmation validation
         document.getElementById('confirm_password').addEventListener('input', function() {
             const password = document.getElementById('password').value;
             const confirm = this.value;
-            
             if (confirm && password !== confirm) {
                 this.setCustomValidity('Passwords do not match');
             } else {
                 this.setCustomValidity('');
             }
         });
+
+        showStep(currentStep);
+        initCamera();
     </script>
 </body>
 </html>
