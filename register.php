@@ -284,7 +284,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php if ($success): ?>
                 <div class="alert alert-success">
                     <?php echo htmlspecialchars($success); ?>
-                    <br><a href="login.php" style="color: inherit; text-decoration: underline;">Click here to login</a>
+                    <br><a href="<?php echo site_url('login.php'); ?>" style="color: inherit; text-decoration: underline;">Click here to login</a>
                 </div>
             <?php endif; ?>
 
@@ -356,7 +356,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </form>
 
             <div class="auth-footer">
-                Already have an account? <a href="login.php">Login here</a>
+                Already have an account? <a href="<?php echo site_url('login.php'); ?>">Login here</a>
             </div>
         </div>
     </div>

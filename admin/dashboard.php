@@ -301,19 +301,19 @@ $daily_loans = $daily_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
         </div>
 
         <ul class="sidebar-menu">
-            <li><a href="dashboard.php" class="active">
+            <li><a href="<?php echo site_url('admin/dashboard.php'); ?>" class="active">
                 <i>📊</i> Dashboard
             </a></li>
-            <li><a href="users.php">
+            <li><a href="<?php echo site_url('admin/users.php'); ?>">
                 <i>👥</i> Users
             </a></li>
-            <li><a href="loans.php">
+            <li><a href="<?php echo site_url('admin/loans.php'); ?>">
                 <i>💰</i> Loans
             </a></li>
-            <li><a href="payments.php">
+            <li><a href="<?php echo site_url('admin/payments.php'); ?>">
                 <i>💳</i> Payments
             </a></li>
-            <li><a href="verifications.php">
+            <li><a href="<?php echo site_url('admin/verifications.php'); ?>">
                 <i>✅</i> Verifications
                 <?php if (count($pending_verifications) > 0): ?>
                     <span class="badge badge-warning" style="margin-left: auto; font-size: 0.75rem;">
@@ -321,18 +321,18 @@ $daily_loans = $daily_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
                     </span>
                 <?php endif; ?>
             </a></li>
-            <li><a href="reports.php">
+            <li><a href="<?php echo site_url('admin/reports.php'); ?>">
                 <i>📈</i> Reports
             </a></li>
-            <li><a href="settings.php">
+            <li><a href="<?php echo site_url('admin/settings.php'); ?>">
                 <i>⚙️</i> Settings
             </a></li>
             <li style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-                <a href="../dashboard.php">
+                <a href="<?php echo site_url('dashboard.php'); ?>">
                     <i>👤</i> User View
                 </a>
             </li>
-            <li><a href="../logout.php">
+            <li><a href="<?php echo site_url('logout.php'); ?>">
                 <i>🚪</i> Logout
             </a></li>
         </ul>

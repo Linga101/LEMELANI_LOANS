@@ -144,28 +144,28 @@ $payments = $payment_stmt->fetchAll(PDO::FETCH_ASSOC);
         </div>
 
         <ul class="sidebar-menu">
-            <li><a href="dashboard.php">
+            <li><a href="<?php echo site_url('dashboard.php'); ?>">
                 <i>🏠</i> Dashboard
             </a></li>
-            <li><a href="loans.php" class="active">
+            <li><a href="<?php echo site_url('loans.php'); ?>" class="active">
                 <i>💰</i> My Loans
             </a></li>
-            <li><a href="apply-loan.php">
+            <li><a href="<?php echo site_url('apply-loan.php'); ?>">
                 <i>➕</i> Apply for Loan
             </a></li>
-            <li><a href="repayments.php">
+            <li><a href="<?php echo site_url('repayments.php'); ?>">
                 <i>💳</i> Repayments
             </a></li>
-            <li><a href="credit-history.php">
+            <li><a href="<?php echo site_url('credit-history.php'); ?>">
                 <i>📊</i> Credit History
             </a></li>
-            <li><a href="notifications.php">
+            <li><a href="<?php echo site_url('notifications.php'); ?>">
                 <i>🔔</i> Notifications
             </a></li>
-            <li><a href="profile.php">
+            <li><a href="<?php echo site_url('profile.php'); ?>">
                 <i>👤</i> Profile
             </a></li>
-            <li><a href="logout.php">
+            <li><a href="<?php echo site_url('logout.php'); ?>">
                 <i>🚪</i> Logout
             </a></li>
         </ul>
@@ -176,7 +176,7 @@ $payments = $payment_stmt->fetchAll(PDO::FETCH_ASSOC);
         <div class="main-content">
             <div class="flex-between mb-4">
                 <div>
-                    <a href="loans.php" class="text-secondary" style="text-decoration: none; font-size: 0.875rem;">← Back to Loans</a>
+                    <a href="<?php echo site_url('loans.php'); ?>" class="text-secondary" style="text-decoration: none; font-size: 0.875rem;">← Back to Loans</a>
                     <h1>Loan #LML-<?php echo str_pad($loan_data['loan_id'], 6, '0', STR_PAD_LEFT); ?></h1>
                     <p class="text-secondary">
                         Applied on <?php echo format_date($loan_data['created_at']); ?>

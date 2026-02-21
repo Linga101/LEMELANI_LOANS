@@ -260,28 +260,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <ul class="sidebar-menu">
-            <li><a href="dashboard.php">
+            <li><a href="<?php echo site_url('dashboard.php'); ?>">
                 <i>🏠</i> Dashboard
             </a></li>
-            <li><a href="loans.php">
+            <li><a href="<?php echo site_url('loans.php'); ?>">
                 <i>💰</i> My Loans
             </a></li>
-            <li><a href="apply-loan.php">
+            <li><a href="<?php echo site_url('apply-loan.php'); ?>">
                 <i>➕</i> Apply for Loan
             </a></li>
-            <li><a href="repayments.php">
+            <li><a href="<?php echo site_url('repayments.php'); ?>">
                 <i>💳</i> Repayments
             </a></li>
-            <li><a href="credit-history.php">
+            <li><a href="<?php echo site_url('credit-history.php'); ?>">
                 <i>📊</i> Credit History
             </a></li>
-            <li><a href="notifications.php">
+            <li><a href="<?php echo site_url('notifications.php'); ?>">
                 <i>🔔</i> Notifications
             </a></li>
-            <li><a href="profile.php" class="active">
+            <li><a href="<?php echo site_url('profile.php'); ?>" class="active">
                 <i>👤</i> Profile
             </a></li>
-            <li><a href="logout.php">
+            <li><a href="<?php echo site_url('logout.php'); ?>">
                 <i>🚪</i> Logout
             </a></li>
         </ul>
@@ -473,7 +473,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <!-- Selfie -->
                             <div class="document-preview">
                                 <h4 style="margin-bottom: 1rem;">Selfie Photo</h4>
-                                <?php if ($user_data['selfie_path']): ?>
+                                <?php if (!empty($user_data['selfie_path'])): ?>
+
                                     <img src="<?php echo UPLOAD_URL . $user_data['selfie_path']; ?>" alt="Selfie">
                                     <div class="text-secondary" style="font-size: 0.875rem;">
                                         ✅ Uploaded and verified
@@ -487,7 +488,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <!-- National ID -->
                             <div class="document-preview">
                                 <h4 style="margin-bottom: 1rem;">National ID</h4>
-                                <?php if ($user_data['id_document_path']): ?>
+                                <?php if (!empty($user_data['id_document_path'])): ?>
+
                                     <?php if (strpos($user_data['id_document_path'], '.pdf') !== false): ?>
                                         <div style="font-size: 4rem; margin: 2rem 0;">📄</div>
                                         <a href="<?php echo UPLOAD_URL . $user_data['id_document_path']; ?>" 

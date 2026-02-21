@@ -120,32 +120,32 @@ $success_rate = $stats['total_transactions'] > 0
         </div>
 
         <ul class="sidebar-menu">
-            <li><a href="dashboard.php">
+            <li><a href="<?php echo site_url('admin/dashboard.php'); ?>">
                 <i>📊</i> Dashboard
             </a></li>
-            <li><a href="users.php">
+            <li><a href="<?php echo site_url('admin/users.php'); ?>">
                 <i>👥</i> Users
             </a></li>
-            <li><a href="loans.php">
+            <li><a href="<?php echo site_url('admin/loans.php'); ?>">
                 <i>💰</i> Loans
             </a></li>
-            <li><a href="payments.php" class="active">
+            <li><a href="<?php echo site_url('admin/payments.php'); ?>" class="active">
                 <i>💳</i> Payments
             </a></li>
-            <li><a href="verifications.php">
+            <li><a href="<?php echo site_url('admin/verifications.php'); ?>">
                 <i>✅</i> Verifications
             </a></li>
-            <li><a href="reports.php">
+            <li><a href="<?php echo site_url('admin/reports.php'); ?>">
                 <i>📈</i> Reports
             </a></li>
-            <li><a href="settings.php">
+            <li><a href="<?php echo site_url('admin/settings.php'); ?>">
                 <i>⚙️</i> Settings
             </a></li>
             <li style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-                <a href="../dashboard.php">
+                <a href="<?php echo site_url('dashboard.php'); ?>">
                     <i>👤</i> User View
                 </a></li>
-            <li><a href="../logout.php">
+            <li><a href="<?php echo site_url('logout.php'); ?>">
                 <i>🚪</i> Logout
             </a></li>
         </ul>

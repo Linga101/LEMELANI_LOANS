@@ -223,22 +223,22 @@ $unread_count = $unread_stmt->fetch(PDO::FETCH_ASSOC)['unread'];
         </div>
 
         <ul class="sidebar-menu">
-            <li><a href="dashboard.php">
+            <li><a href="<?php echo site_url('dashboard.php'); ?>">
                 <i>🏠</i> Dashboard
             </a></li>
-            <li><a href="loans.php">
+            <li><a href="<?php echo site_url('loans.php'); ?>">
                 <i>💰</i> My Loans
             </a></li>
-            <li><a href="apply-loan.php">
+            <li><a href="<?php echo site_url('apply-loan.php'); ?>">
                 <i>➕</i> Apply for Loan
             </a></li>
-            <li><a href="repayments.php">
+            <li><a href="<?php echo site_url('repayments.php'); ?>">
                 <i>💳</i> Repayments
             </a></li>
-            <li><a href="credit-history.php">
+            <li><a href="<?php echo site_url('credit-history.php'); ?>">
                 <i>📊</i> Credit History
             </a></li>
-            <li><a href="notifications.php" class="active">
+            <li><a href="<?php echo site_url('notifications.php'); ?>" class="active">
                 <i>🔔</i> Notifications
                 <?php if ($unread_count > 0): ?>
                     <span class="badge badge-danger" style="margin-left: auto; font-size: 0.75rem;">
@@ -246,10 +246,10 @@ $unread_count = $unread_stmt->fetch(PDO::FETCH_ASSOC)['unread'];
                     </span>
                 <?php endif; ?>
             </a></li>
-            <li><a href="profile.php">
+            <li><a href="<?php echo site_url('profile.php'); ?>">
                 <i>👤</i> Profile
             </a></li>
-            <li><a href="logout.php">
+            <li><a href="<?php echo site_url('logout.php'); ?>">
                 <i>🚪</i> Logout
             </a></li>
         </ul>

@@ -279,28 +279,28 @@ list($rating, $rating_color, $rating_message) = getCreditRating($credit_score);
         </div>
 
         <ul class="sidebar-menu">
-            <li><a href="dashboard.php">
+            <li><a href="<?php echo site_url('dashboard.php'); ?>">
                 <i>🏠</i> Dashboard
             </a></li>
-            <li><a href="loans.php">
+            <li><a href="<?php echo site_url('loans.php'); ?>">
                 <i>💰</i> My Loans
             </a></li>
-            <li><a href="apply-loan.php">
+            <li><a href="<?php echo site_url('apply-loan.php'); ?>">
                 <i>➕</i> Apply for Loan
             </a></li>
-            <li><a href="repayments.php">
+            <li><a href="<?php echo site_url('repayments.php'); ?>">
                 <i>💳</i> Repayments
             </a></li>
-            <li><a href="credit-history.php" class="active">
+            <li><a href="<?php echo site_url('credit-history.php'); ?>" class="active">
                 <i>📊</i> Credit History
             </a></li>
-            <li><a href="notifications.php">
+            <li><a href="<?php echo site_url('notifications.php'); ?>">
                 <i>🔔</i> Notifications
             </a></li>
-            <li><a href="profile.php">
+            <li><a href="<?php echo site_url('profile.php'); ?>">
                 <i>👤</i> Profile
             </a></li>
-            <li><a href="logout.php">
+            <li><a href="<?php echo site_url('logout.php'); ?>">
                 <i>🚪</i> Logout
             </a></li>
         </ul>
@@ -473,7 +473,7 @@ list($rating, $rating_color, $rating_message) = getCreditRating($credit_score);
                             <div style="font-size: 4rem; margin-bottom: 1rem;">📊</div>
                             <h3>No Credit History Yet</h3>
                             <p>Your credit activities will appear here as you use our services.</p>
-                            <a href="apply-loan.php" class="btn btn-primary mt-2">Apply for Your First Loan</a>
+                            <a href="<?php echo site_url('apply-loan.php'); ?>" class="btn btn-primary mt-2">Apply for Your First Loan</a>
                         </div>
                     <?php else: ?>
                         <div class="timeline">

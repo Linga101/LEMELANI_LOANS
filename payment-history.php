@@ -55,28 +55,28 @@ krsort($payments_by_month); // Sort by most recent first
         </div>
 
         <ul class="sidebar-menu">
-            <li><a href="dashboard.php">
+            <li><a href="<?php echo site_url('dashboard.php'); ?>">
                 <i>🏠</i> Dashboard
             </a></li>
-            <li><a href="loans.php">
+            <li><a href="<?php echo site_url('loans.php'); ?>">
                 <i>💰</i> My Loans
             </a></li>
-            <li><a href="apply-loan.php">
+            <li><a href="<?php echo site_url('apply-loan.php'); ?>">
                 <i>➕</i> Apply for Loan
             </a></li>
-            <li><a href="repayments.php" class="active">
+            <li><a href="<?php echo site_url('repayments.php'); ?>" class="active">
                 <i>💳</i> Repayments
             </a></li>
-            <li><a href="credit-history.php">
+            <li><a href="<?php echo site_url('credit-history.php'); ?>">
                 <i>📊</i> Credit History
             </a></li>
-            <li><a href="notifications.php">
+            <li><a href="<?php echo site_url('notifications.php'); ?>">
                 <i>🔔</i> Notifications
             </a></li>
-            <li><a href="profile.php">
+            <li><a href="<?php echo site_url('profile.php'); ?>">
                 <i>👤</i> Profile
             </a></li>
-            <li><a href="logout.php">
+            <li><a href="<?php echo site_url('logout.php'); ?>">
                 <i>🚪</i> Logout
             </a></li>
         </ul>
@@ -91,7 +91,7 @@ krsort($payments_by_month); // Sort by most recent first
                     <p class="text-secondary">View all your loan repayment transactions</p>
                 </div>
                 <div>
-                    <a href="repayments.php" class="btn btn-primary">Make Payment</a>
+                    <a href="<?php echo site_url('repayments.php'); ?>" class="btn btn-primary">Make Payment</a>
                 </div>
             </div>
 
@@ -127,7 +127,7 @@ krsort($payments_by_month); // Sort by most recent first
                         <div style="font-size: 4rem; margin-bottom: 1rem;">💳</div>
                         <h3>No Payment History</h3>
                         <p class="text-secondary">You haven't made any payments yet.</p>
-                        <a href="repayments.php" class="btn btn-primary mt-2">Make Your First Payment</a>
+                        <a href="<?php echo site_url('repayments.php'); ?>" class="btn btn-primary mt-2">Make Your First Payment</a>
                     </div>
                 </div>
             <?php else: ?>

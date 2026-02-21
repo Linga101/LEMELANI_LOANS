@@ -44,22 +44,22 @@ $notifications = $notif_stmt->fetchAll(PDO::FETCH_ASSOC);
         </div>
 
         <ul class="sidebar-menu">
-            <li><a href="dashboard.php" class="active">
+            <li><a href="<?php echo site_url('dashboard.php'); ?>" class="active">
                 <i>🏠</i> Dashboard
             </a></li>
-            <li><a href="loans.php">
+            <li><a href="<?php echo site_url('loans.php'); ?>">
                 <i>💰</i> My Loans
             </a></li>
-            <li><a href="apply-loan.php">
+            <li><a href="<?php echo site_url('apply-loan.php'); ?>">
                 <i>➕</i> Apply for Loan
             </a></li>
-            <li><a href="repayments.php">
+            <li><a href="<?php echo site_url('repayments.php'); ?>">
                 <i>💳</i> Repayments
             </a></li>
-            <li><a href="credit-history.php">
+            <li><a href="<?php echo site_url('credit-history.php'); ?>">
                 <i>📊</i> Credit History
             </a></li>
-            <li><a href="notifications.php">
+            <li><a href="<?php echo site_url('notifications.php'); ?>">
                 <i>🔔</i> Notifications
                 <?php if (count(array_filter($notifications, fn($n) => !$n['is_read'])) > 0): ?>
                     <span class="badge badge-danger" style="margin-left: auto;">
@@ -67,10 +67,10 @@ $notifications = $notif_stmt->fetchAll(PDO::FETCH_ASSOC);
                     </span>
                 <?php endif; ?>
             </a></li>
-            <li><a href="profile.php">
+            <li><a href="<?php echo site_url('profile.php'); ?>">
                 <i>👤</i> Profile
             </a></li>
-            <li><a href="logout.php">
+            <li><a href="<?php echo site_url('logout.php'); ?>">
                 <i>🚪</i> Logout
             </a></li>
         </ul>
@@ -86,7 +86,7 @@ $notifications = $notif_stmt->fetchAll(PDO::FETCH_ASSOC);
                     <p class="text-secondary">Here's what's happening with your account today.</p>
                 </div>
                 <div>
-                    <a href="apply-loan.php" class="btn btn-primary">Apply for Loan</a>
+                    <a href="<?php echo site_url('apply-loan.php'); ?>" class="btn btn-primary">Apply for Loan</a>
                 </div>
             </div>
 
@@ -166,13 +166,13 @@ $notifications = $notif_stmt->fetchAll(PDO::FETCH_ASSOC);
                     <h3 class="card-title">Quick Actions</h3>
                 </div>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-                    <a href="apply-loan.php" class="btn btn-accent" style="text-decoration: none;">
+                    <a href="<?php echo site_url('apply-loan.php'); ?>" class="btn btn-accent" style="text-decoration: none;">
                         ➕ Apply for New Loan
                     </a>
-                    <a href="repayments.php" class="btn btn-primary" style="text-decoration: none;">
+                    <a href="<?php echo site_url('repayments.php'); ?>" class="btn btn-primary" style="text-decoration: none;">
                         💳 Make Payment
                     </a>
-                    <a href="credit-history.php" class="btn btn-secondary" style="text-decoration: none;">
+                    <a href="<?php echo site_url('credit-history.php'); ?>" class="btn btn-secondary" style="text-decoration: none;">
                         📊 View Credit Report
                     </a>
                 </div>
@@ -182,14 +182,14 @@ $notifications = $notif_stmt->fetchAll(PDO::FETCH_ASSOC);
             <div class="card mb-3">
                 <div class="card-header flex-between">
                     <h3 class="card-title">Recent Loans</h3>
-                    <a href="loans.php" class="text-secondary" style="font-size: 0.875rem;">View all →</a>
+                    <a href="<?php echo site_url('loans.php'); ?>" class="text-secondary" style="font-size: 0.875rem;">View all →</a>
                 </div>
 
                 <?php if (empty($recent_loans)): ?>
                     <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
                         <div style="font-size: 3rem; margin-bottom: 1rem;">💰</div>
                         <p>No loans yet. Apply for your first loan today!</p>
-                        <a href="apply-loan.php" class="btn btn-primary mt-2">Apply Now</a>
+                        <a href="<?php echo site_url('apply-loan.php'); ?>" class="btn btn-primary mt-2">Apply Now</a>
                     </div>
                 <?php else: ?>
                     <div class="table-wrapper">
@@ -235,7 +235,7 @@ $notifications = $notif_stmt->fetchAll(PDO::FETCH_ASSOC);
             <div class="card">
                 <div class="card-header flex-between">
                     <h3 class="card-title">Recent Notifications</h3>
-                    <a href="notifications.php" class="text-secondary" style="font-size: 0.875rem;">View all →</a>
+                    <a href="<?php echo site_url('notifications.php'); ?>" class="text-secondary" style="font-size: 0.875rem;">View all →</a>
                 </div>
 
                 <?php if (empty($notifications)): ?>

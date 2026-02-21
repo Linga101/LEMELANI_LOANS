@@ -232,28 +232,28 @@ foreach ($settings_result as $setting) {
         </div>
 
         <ul class="sidebar-menu">
-            <li><a href="dashboard.php">
+            <li><a href="<?php echo site_url('dashboard.php'); ?>">
                 <i>🏠</i> Dashboard
             </a></li>
-            <li><a href="loans.php">
+            <li><a href="<?php echo site_url('loans.php'); ?>">
                 <i>💰</i> My Loans
             </a></li>
-            <li><a href="apply-loan.php" class="active">
+            <li><a href="<?php echo site_url('apply-loan.php'); ?>" class="active">
                 <i>➕</i> Apply for Loan
             </a></li>
-            <li><a href="repayments.php">
+            <li><a href="<?php echo site_url('repayments.php'); ?>">
                 <i>💳</i> Repayments
             </a></li>
-            <li><a href="credit-history.php">
+            <li><a href="<?php echo site_url('credit-history.php'); ?>">
                 <i>📊</i> Credit History
             </a></li>
-            <li><a href="notifications.php">
+            <li><a href="<?php echo site_url('notifications.php'); ?>">
                 <i>🔔</i> Notifications
             </a></li>
-            <li><a href="profile.php">
+            <li><a href="<?php echo site_url('profile.php'); ?>">
                 <i>👤</i> Profile
             </a></li>
-            <li><a href="logout.php">
+            <li><a href="<?php echo site_url('logout.php'); ?>">
                 <i>🚪</i> Logout
             </a></li>
         </ul>
@@ -426,8 +426,8 @@ foreach ($settings_result as $setting) {
                     </div>
 
                     <div style="margin-top: 2rem; display: flex; gap: 1rem;">
-                        <a href="dashboard.php" class="btn btn-primary" style="flex: 1;">Go to Dashboard</a>
-                        <a href="loans.php" class="btn btn-secondary" style="flex: 1;">View Loan</a>
+                        <a href="<?php echo site_url('dashboard.php'); ?>" class="btn btn-primary" style="flex: 1;">Go to Dashboard</a>
+                        <a href="<?php echo site_url('loans.php'); ?>" class="btn btn-secondary" style="flex: 1;">View Loan</a>
                     </div>
                 <?php else: ?>
                     <div class="result-icon">😔</div>
@@ -450,7 +450,7 @@ foreach ($settings_result as $setting) {
                     </div>
 
                     <div style="margin-top: 2rem;">
-                        <a href="dashboard.php" class="btn btn-primary btn-block">Back to Dashboard</a>
+                        <a href="<?php echo site_url('dashboard.php'); ?>" class="btn btn-primary btn-block">Back to Dashboard</a>
                     </div>
                 <?php endif; ?>
             </div>

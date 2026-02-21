@@ -159,7 +159,7 @@ if (is_logged_in()) {
                 <ul class="navbar-menu">
                     <li><a href="#features">Features</a></li>
                     <li><a href="#how-it-works">How It Works</a></li>
-                    <li><a href="login.php">Login</a></li>
+                    <li><a href="<?php echo site_url('login.php'); ?>">Login</a></li>
                     <li><a href="register.php" class="btn btn-primary btn-sm">Get Started</a></li>
                 </ul>
             </div>
@@ -177,7 +177,7 @@ if (is_logged_in()) {
                 </p>
                 <div class="hero-buttons">
                     <a href="register.php" class="btn btn-accent btn-lg">Apply for a Loan</a>
-                    <a href="login.php" class="btn btn-secondary btn-lg">Sign In</a>
+                    <a href="<?php echo site_url('login.php'); ?>" class="btn btn-secondary btn-lg">Sign In</a>
                 </div>
             </div>
         </div>

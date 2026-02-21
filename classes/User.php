@@ -38,6 +38,15 @@ class User {
         
         if ($stmt->rowCount() > 0) {
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            // ensure optional document fields exist to prevent undefined index notices
+            if (!array_key_exists('selfie_path', $row)) {
+                $row['selfie_path'] = null;
+            }
+            if (!array_key_exists('id_document_path', $row)) {
+                $row['id_document_path'] = null;
+            }
+
             $this->mapProperties($row);
             return $row;
         }
@@ -370,8 +379,10 @@ class User {
         $this->verification_status = $row['verification_status'];
         $this->account_status = $row['account_status'];
         $this->credit_score = $row['credit_score'];
-        $this->selfie_path = $row['selfie_path'];
-        $this->id_document_path = $row['id_document_path'];
+        // Some installations/schema versions may not include the selfie/id columns.
+        // Use null-coalescing to avoid notices if the fields are absent.
+        $this->selfie_path = $row['selfie_path'] ?? null;
+        $this->id_document_path = $row['id_document_path'] ?? null;
         $this->created_at = $row['created_at'];
         $this->last_login = $row['last_login'];
     }

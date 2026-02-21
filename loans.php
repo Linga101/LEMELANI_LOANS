@@ -157,28 +157,28 @@ foreach ($loans as $l) {
         </div>
 
         <ul class="sidebar-menu">
-            <li><a href="dashboard.php">
+            <li><a href="<?php echo site_url('dashboard.php'); ?>">
                 <i>🏠</i> Dashboard
             </a></li>
-            <li><a href="loans.php" class="active">
+            <li><a href="<?php echo site_url('loans.php'); ?>" class="active">
                 <i>💰</i> My Loans
             </a></li>
-            <li><a href="apply-loan.php">
+            <li><a href="<?php echo site_url('apply-loan.php'); ?>">
                 <i>➕</i> Apply for Loan
             </a></li>
-            <li><a href="repayments.php">
+            <li><a href="<?php echo site_url('repayments.php'); ?>">
                 <i>💳</i> Repayments
             </a></li>
-            <li><a href="credit-history.php">
+            <li><a href="<?php echo site_url('credit-history.php'); ?>">
                 <i>📊</i> Credit History
             </a></li>
-            <li><a href="notifications.php">
+            <li><a href="<?php echo site_url('notifications.php'); ?>">
                 <i>🔔</i> Notifications
             </a></li>
-            <li><a href="profile.php">
+            <li><a href="<?php echo site_url('profile.php'); ?>">
                 <i>👤</i> Profile
             </a></li>
-            <li><a href="logout.php">
+            <li><a href="<?php echo site_url('logout.php'); ?>">
                 <i>🚪</i> Logout
             </a></li>
         </ul>
@@ -193,7 +193,7 @@ foreach ($loans as $l) {
                     <p class="text-secondary">View and manage all your loan applications</p>
                 </div>
                 <div>
-                    <a href="apply-loan.php" class="btn btn-primary">Apply for New Loan</a>
+                    <a href="<?php echo site_url('apply-loan.php'); ?>" class="btn btn-primary">Apply for New Loan</a>
                 </div>
             </div>
 
@@ -257,7 +257,7 @@ foreach ($loans as $l) {
                                 You don't have any <?php echo $filter_status; ?> loans.
                             <?php endif; ?>
                         </p>
-                        <a href="apply-loan.php" class="btn btn-primary mt-2">Apply for Your First Loan</a>
+                        <a href="<?php echo site_url('apply-loan.php'); ?>" class="btn btn-primary mt-2">Apply for Your First Loan</a>
                     </div>
                 </div>
             <?php else: ?>

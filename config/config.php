@@ -11,7 +11,18 @@ if (session_status() === PHP_SESSION_NONE) {
 // Site settings
 define('SITE_NAME', 'Lemelani Loans');
 define('SITE_TAGLINE', 'Borrow Smart, Live Better');
-define('SITE_URL', 'http://localhost/lemelani-loans'); // Change in production
+
+// Base URL -- automatically detect from the server environment (works for local & production).
+// You can override this manually if needed by changing the value below.
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$host = $_SERVER['HTTP_HOST'];
+// dirname($_SERVER['SCRIPT_NAME']) returns the directory where the current script resides; trim trailing slashes
+$scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '\/');
+define('SITE_URL', $protocol . '://' . $host . $scriptDir);
+
+// Example: if your app lives at http://localhost/LEMELANI_LOANS this will
+// result in SITE_URL == 'http://localhost/LEMELANI_LOANS'
+
 define('SITE_EMAIL', 'info@lemelaniloans.com');
 define('SITE_PHONE', '+265 999 123 456');
 
@@ -63,8 +74,24 @@ function sanitize_input($data) {
 }
 
 function redirect($url) {
-    header("Location: " . SITE_URL . $url);
+    // accept absolute URLs
+    if (filter_var($url, FILTER_VALIDATE_URL)) {
+        header("Location: $url");
+    } else {
+        // ensure path begins with slash
+        $path = (strpos($url, '/') === 0) ? $url : "/$url";
+        header("Location: " . rtrim(SITE_URL, '/') . $path);
+    }
     exit();
+}
+
+/**
+ * Helper to build links to the application.
+ * Usage: <a href="<?php echo site_url('loans.php'); ?>">My Loans</a>
+ */
+function site_url($path = '') {
+    $path = ltrim($path, '/');
+    return rtrim(SITE_URL, '/') . '/' . $path;
 }
 
 function is_logged_in() {

@@ -241,28 +241,28 @@ $overdue_loans = $payment->getOverdueLoans(get_user_id());
         </div>
 
         <ul class="sidebar-menu">
-            <li><a href="dashboard.php">
+            <li><a href="<?php echo site_url('dashboard.php'); ?>">
                 <i>🏠</i> Dashboard
             </a></li>
-            <li><a href="loans.php">
+            <li><a href="<?php echo site_url('loans.php'); ?>">
                 <i>💰</i> My Loans
             </a></li>
-            <li><a href="apply-loan.php">
+            <li><a href="<?php echo site_url('apply-loan.php'); ?>">
                 <i>➕</i> Apply for Loan
             </a></li>
-            <li><a href="repayments.php" class="active">
+            <li><a href="<?php echo site_url('repayments.php'); ?>" class="active">
                 <i>💳</i> Repayments
             </a></li>
-            <li><a href="credit-history.php">
+            <li><a href="<?php echo site_url('credit-history.php'); ?>">
                 <i>📊</i> Credit History
             </a></li>
-            <li><a href="notifications.php">
+            <li><a href="<?php echo site_url('notifications.php'); ?>">
                 <i>🔔</i> Notifications
             </a></li>
-            <li><a href="profile.php">
+            <li><a href="<?php echo site_url('profile.php'); ?>">
                 <i>👤</i> Profile
             </a></li>
-            <li><a href="logout.php">
+            <li><a href="<?php echo site_url('logout.php'); ?>">
                 <i>🚪</i> Logout
             </a></li>
         </ul>
@@ -298,7 +298,7 @@ $overdue_loans = $payment->getOverdueLoans(get_user_id());
                         <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
                         <h3>No Active Loans</h3>
                         <p class="text-secondary">You don't have any loans requiring repayment.</p>
-                        <a href="loans.php" class="btn btn-secondary mt-2">View Loan History</a>
+                        <a href="<?php echo site_url('loans.php'); ?>" class="btn btn-secondary mt-2">View Loan History</a>
                     </div>
                 </div>
             <?php else: ?>
@@ -530,8 +530,8 @@ $overdue_loans = $payment->getOverdueLoans(get_user_id());
                 <?php endif; ?>
 
                 <div style="display: flex; gap: 1rem;">
-                    <a href="dashboard.php" class="btn btn-primary" style="flex: 1;">Go to Dashboard</a>
-                    <a href="loans.php" class="btn btn-secondary" style="flex: 1;">View Loans</a>
+                    <a href="<?php echo site_url('dashboard.php'); ?>" class="btn btn-primary" style="flex: 1;">Go to Dashboard</a>
+                    <a href="<?php echo site_url('loans.php'); ?>" class="btn btn-secondary" style="flex: 1;">View Loans</a>
                 </div>
             </div>
         </div>
