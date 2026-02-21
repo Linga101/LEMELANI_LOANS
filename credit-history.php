@@ -82,6 +82,8 @@ list($rating, $rating_color, $rating_message) = getCreditRating($credit_score);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Credit History - <?php echo SITE_NAME; ?></title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="assets/css/fontawesome-all.min.css" />
     <style>
         .credit-score-card {
             background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.05) 100%);
@@ -280,28 +282,28 @@ list($rating, $rating_color, $rating_message) = getCreditRating($credit_score);
 
         <ul class="sidebar-menu">
             <li><a href="<?php echo site_url('dashboard.php'); ?>">
-                <i>🏠</i> Dashboard
+                <i class="fas fa-home"></i> Dashboard
             </a></li>
             <li><a href="<?php echo site_url('loans.php'); ?>">
-                <i>💰</i> My Loans
+                <i class="fas fa-wallet"></i> My Loans
             </a></li>
             <li><a href="<?php echo site_url('apply-loan.php'); ?>">
-                <i>➕</i> Apply for Loan
+                <i class="fas fa-plus-circle"></i> Apply for Loan
             </a></li>
             <li><a href="<?php echo site_url('repayments.php'); ?>">
-                <i>💳</i> Repayments
+                <i class="fas fa-credit-card"></i> Repayments
             </a></li>
             <li><a href="<?php echo site_url('credit-history.php'); ?>" class="active">
-                <i>📊</i> Credit History
+                <i class="fas fa-chart-line"></i> Credit History
             </a></li>
             <li><a href="<?php echo site_url('notifications.php'); ?>">
-                <i>🔔</i> Notifications
+                <i class="fas fa-bell"></i> Notifications
             </a></li>
             <li><a href="<?php echo site_url('profile.php'); ?>">
-                <i>👤</i> Profile
+                <i class="fas fa-user"></i> Profile
             </a></li>
             <li><a href="<?php echo site_url('logout.php'); ?>">
-                <i>🚪</i> Logout
+                <i class="fas fa-sign-out-alt"></i> Logout
             </a></li>
         </ul>
     </aside>
@@ -470,7 +472,7 @@ list($rating, $rating_color, $rating_message) = getCreditRating($credit_score);
                 <div style="padding: 2rem;">
                     <?php if (empty($credit_history)): ?>
                         <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
-                            <div style="font-size: 4rem; margin-bottom: 1rem;">📊</div>
+                            <div style="font-size: 4rem; margin-bottom: 1rem;"><i class="fas fa-chart-line"></i></div>
                             <h3>No Credit History Yet</h3>
                             <p>Your credit activities will appear here as you use our services.</p>
                             <a href="<?php echo site_url('apply-loan.php'); ?>" class="btn btn-primary mt-2">Apply for Your First Loan</a>
@@ -491,14 +493,14 @@ list($rating, $rating_color, $rating_message) = getCreditRating($credit_score);
                                         <div class="timeline-title">
                                             <?php 
                                             echo match($event['event_type']) {
-                                                'loan_applied' => '📝 Loan Application Submitted',
-                                                'loan_approved' => '✅ Loan Approved',
-                                                'loan_rejected' => '❌ Loan Rejected',
-                                                'payment_made' => '💳 Payment Made',
-                                                'payment_missed' => '⚠️ Payment Missed',
-                                                'loan_repaid' => '🎉 Loan Fully Repaid',
-                                                'score_adjusted' => '⚙️ Score Adjusted',
-                                                default => '📊 Credit Event'
+                                                'loan_applied' => '<i class="fas fa-file-alt"></i> Loan Application Submitted',
+                                                'loan_approved' => '<i class="fas fa-check-circle"></i> Loan Approved',
+                                                'loan_rejected' => '<i class="fas fa-times-circle"></i> Loan Rejected',
+                                                'payment_made' => '<i class="fas fa-credit-card"></i> Payment Made',
+                                                'payment_missed' => '<i class="fas fa-exclamation-triangle"></i> Payment Missed',
+                                                'loan_repaid' => '<i class="fas fa-trophy"></i> Loan Fully Repaid',
+                                                'score_adjusted' => '<i class="fas fa-cog"></i> Score Adjusted',
+                                                default => '<i class="fas fa-chart-line"></i> Credit Event'
                                             };
                                             ?>
                                             

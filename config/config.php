@@ -65,6 +65,17 @@ ini_set('display_errors', 1);
 // Include database configuration
 require_once ROOT_PATH . '/config/database.php';
 
+// Load Credit Scoring Engine class and provide a helper to get an instance
+if (file_exists(ROOT_PATH . '/classes/CreditScoringEngine.php')) {
+    require_once ROOT_PATH . '/classes/CreditScoringEngine.php';
+}
+
+function get_scoring_engine() {
+    $database = new Database();
+    $db = $database->getConnection();
+    return new CreditScoringEngine($db);
+}
+
 // Helper functions
 function sanitize_input($data) {
     $data = trim($data);

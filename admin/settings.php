@@ -81,6 +81,8 @@ $system_stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>System Settings - <?php echo SITE_NAME; ?></title>
     <link rel="stylesheet" href="../assets/css/style.css">
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="../assets/css/fontawesome-all.min.css" />
     <style>
         .settings-section {
             background: var(--dark-card);
@@ -156,33 +158,33 @@ $system_stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
 
         <ul class="sidebar-menu">
             <li><a href="<?php echo site_url('admin/dashboard.php'); ?>">
-                <i>📊</i> Dashboard
+                <i class="fas fa-chart-bar"></i> Dashboard
             </a></li>
             <li><a href="<?php echo site_url('admin/users.php'); ?>">
-                <i>👥</i> Users
+                <i class="fas fa-users"></i> Users
             </a></li>
             <li><a href="<?php echo site_url('admin/loans.php'); ?>">
-                <i>💰</i> Loans
+                <i class="fas fa-wallet"></i> Loans
             </a></li>
             <li><a href="<?php echo site_url('admin/payments.php'); ?>">
-                <i>💳</i> Payments
+                <i class="fas fa-credit-card"></i> Payments
             </a></li>
             <li><a href="<?php echo site_url('admin/verifications.php'); ?>">
-                <i>✅</i> Verifications
+                <i class="fas fa-check-circle"></i> Verifications
             </a></li>
             <li><a href="<?php echo site_url('admin/reports.php'); ?>">
-                <i>📈</i> Reports
+                <i class="fas fa-chart-bar"></i> Reports
             </a></li>
             <li><a href="<?php echo site_url('admin/settings.php'); ?>" class="active">
-                <i>⚙️</i> Settings
+                <i class="fas fa-cog"></i> Settings
             </a></li>
             <li style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-color);">
                 <a href="<?php echo site_url('dashboard.php'); ?>">
-                    <i>👤</i> User View
+                    <i class="fas fa-user"></i> User View
                 </a>
             </li>
             <li><a href="<?php echo site_url('logout.php'); ?>">
-                <i>🚪</i> Logout
+                <i class="fas fa-sign-out-alt"></i> Logout
             </a></li>
         </ul>
     </aside>
@@ -206,7 +208,7 @@ $system_stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
             <?php endif; ?>
 
             <div class="warning-box">
-                <strong>⚠️ Important:</strong> Changes to these settings will affect all new loan applications and calculations. 
+                <strong><i class="fas fa-exclamation-triangle"></i> Important:</strong> Changes to these settings will affect all new loan applications and calculations. 
                 Existing loans will not be affected. Please review carefully before saving.
             </div>
 
@@ -246,7 +248,7 @@ $system_stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
                 <!-- Loan Settings -->
                 <div class="settings-section">
                     <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                        💰 Loan Configuration
+                        <i class="fas fa-wallet"></i> Loan Configuration
                     </h3>
                     
                     <div class="settings-grid">
@@ -329,7 +331,7 @@ $system_stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
                 <!-- Credit Score Settings -->
                 <div class="settings-section">
                     <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                        📊 Credit Score Configuration
+                        <i class="fas fa-chart-line"></i> Credit Score Configuration
                     </h3>
                     
                     <div class="settings-grid">
@@ -347,7 +349,7 @@ $system_stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
                     </div>
 
                     <div class="info-box" style="margin-top: 1.5rem;">
-                        <strong>ℹ️ Credit Score Guide:</strong><br>
+                        <strong><i class="fas fa-info-circle"></i> Credit Score Guide:</strong><br>
                         • 300-499: Poor (High risk)<br>
                         • 500-649: Fair (Medium risk)<br>
                         • 650-749: Good (Low risk)<br>
@@ -375,19 +377,19 @@ $system_stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
                         <h4 style="margin-bottom: 1rem;">Payment Gateways Status</h4>
                         <div style="display: grid; gap: 0.75rem;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span>📱 Airtel Money</span>
+                                <span><i class="fas fa-mobile-alt"></i> Airtel Money</span>
                                 <span class="badge badge-success">Active</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span>💰 TNM Mpamba</span>
+                                <span><i class="fas fa-wallet"></i> TNM Mpamba</span>
                                 <span class="badge badge-success">Active</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span>💳 Sticpay</span>
+                                <span><i class="fas fa-credit-card"></i> Sticpay</span>
                                 <span class="badge badge-success">Active</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span>💳 Mastercard/Visa</span>
+                                <span><i class="fas fa-credit-card"></i> Mastercard/Visa</span>
                                 <span class="badge badge-success">Active</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: center;">

@@ -91,6 +91,8 @@ $overdue_loans = $payment->getOverdueLoans(get_user_id());
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Repayments - <?php echo SITE_NAME; ?></title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="assets/css/fontawesome-all.min.css" />
     <style>
         .payment-section {
             display: grid;
@@ -242,28 +244,28 @@ $overdue_loans = $payment->getOverdueLoans(get_user_id());
 
         <ul class="sidebar-menu">
             <li><a href="<?php echo site_url('dashboard.php'); ?>">
-                <i>🏠</i> Dashboard
+                <i class="fas fa-home"></i> Dashboard
             </a></li>
             <li><a href="<?php echo site_url('loans.php'); ?>">
-                <i>💰</i> My Loans
+                <i class="fas fa-wallet"></i> My Loans
             </a></li>
             <li><a href="<?php echo site_url('apply-loan.php'); ?>">
-                <i>➕</i> Apply for Loan
+                <i class="fas fa-plus-circle"></i> Apply for Loan
             </a></li>
             <li><a href="<?php echo site_url('repayments.php'); ?>" class="active">
-                <i>💳</i> Repayments
+                <i class="fas fa-credit-card"></i> Repayments
             </a></li>
             <li><a href="<?php echo site_url('credit-history.php'); ?>">
-                <i>📊</i> Credit History
+                <i class="fas fa-chart-line"></i> Credit History
             </a></li>
             <li><a href="<?php echo site_url('notifications.php'); ?>">
-                <i>🔔</i> Notifications
+                <i class="fas fa-bell"></i> Notifications
             </a></li>
             <li><a href="<?php echo site_url('profile.php'); ?>">
-                <i>👤</i> Profile
+                <i class="fas fa-user"></i> Profile
             </a></li>
             <li><a href="<?php echo site_url('logout.php'); ?>">
-                <i>🚪</i> Logout
+                <i class="fas fa-sign-out-alt"></i> Logout
             </a></li>
         </ul>
     </aside>
@@ -287,7 +289,7 @@ $overdue_loans = $payment->getOverdueLoans(get_user_id());
 
             <?php if (!empty($overdue_loans)): ?>
                 <div class="alert alert-warning mb-3">
-                    <strong>⚠️ Overdue Loans</strong><br>
+                    <strong><i class="fas fa-exclamation-triangle"></i> Overdue Loans</strong><br>
                     You have <?php echo count($overdue_loans); ?> overdue loan(s). Please make a payment to avoid penalties.
                 </div>
             <?php endif; ?>
@@ -295,7 +297,7 @@ $overdue_loans = $payment->getOverdueLoans(get_user_id());
             <?php if (empty($active_loans)): ?>
                 <div class="card">
                     <div style="text-align: center; padding: 3rem;">
-                        <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
+                        <div style="font-size: 4rem; margin-bottom: 1rem;"><i class="fas fa-check-circle" style="color: var(--success);"></i></div>
                         <h3>No Active Loans</h3>
                         <p class="text-secondary">You don't have any loans requiring repayment.</p>
                         <a href="<?php echo site_url('loans.php'); ?>" class="btn btn-secondary mt-2">View Loan History</a>
@@ -342,7 +344,7 @@ $overdue_loans = $payment->getOverdueLoans(get_user_id());
                                         <?php if ($penalty > 0): ?>
                                             <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border-color);">
                                                 <span class="text-danger" style="font-size: 0.875rem;">
-                                                    ⚠️ Late penalty: <?php echo format_currency($penalty); ?>
+                                                    <i class="fas fa-exclamation-triangle"></i> Late penalty: <?php echo format_currency($penalty); ?>
                                                 </span>
                                             </div>
                                         <?php endif; ?>
@@ -379,32 +381,32 @@ $overdue_loans = $payment->getOverdueLoans(get_user_id());
                                     <label class="form-label">Payment Method *</label>
                                     <div class="payment-methods">
                                         <div class="payment-method-card" onclick="selectPaymentMethod('airtel_money')">
-                                            <div class="payment-method-icon">📱</div>
+                                            <div class="payment-method-icon"><i class="fas fa-mobile-alt"></i></div>
                                             <div class="payment-method-name">Airtel Money</div>
                                         </div>
 
                                         <div class="payment-method-card" onclick="selectPaymentMethod('tnm_mpamba')">
-                                            <div class="payment-method-icon">💰</div>
+                                            <div class="payment-method-icon"><i class="fas fa-wallet"></i></div>
                                             <div class="payment-method-name">TNM Mpamba</div>
                                         </div>
 
                                         <div class="payment-method-card" onclick="selectPaymentMethod('sticpay')">
-                                            <div class="payment-method-icon">💳</div>
+                                            <div class="payment-method-icon"><i class="fas fa-credit-card"></i></div>
                                             <div class="payment-method-name">Sticpay</div>
                                         </div>
 
                                         <div class="payment-method-card" onclick="selectPaymentMethod('mastercard')">
-                                            <div class="payment-method-icon">💳</div>
+                                            <div class="payment-method-icon"><i class="fas fa-credit-card"></i></div>
                                             <div class="payment-method-name">Mastercard</div>
                                         </div>
 
                                         <div class="payment-method-card" onclick="selectPaymentMethod('visa')">
-                                            <div class="payment-method-icon">💳</div>
+                                            <div class="payment-method-icon"><i class="fas fa-credit-card"></i></div>
                                             <div class="payment-method-name">Visa</div>
                                         </div>
 
                                         <div class="payment-method-card" onclick="selectPaymentMethod('binance')">
-                                            <div class="payment-method-icon">₿</div>
+                                            <div class="payment-method-icon"><i class="fab fa-bitcoin"></i></div>
                                             <div class="payment-method-name">Binance</div>
                                         </div>
                                     </div>
@@ -502,7 +504,7 @@ $overdue_loans = $payment->getOverdueLoans(get_user_id());
     <?php if ($payment_result && $payment_result['success']): ?>
         <div class="success-modal" id="successModal">
             <div class="success-content">
-                <div class="success-icon">✅</div>
+                <div class="success-icon"><i class="fas fa-check-circle" style="color: var(--success); font-size:2rem;"></i></div>
                 <h2 style="color: var(--success);">Payment Successful!</h2>
                 <p class="text-secondary">Your payment has been processed successfully.</p>
                 
@@ -525,7 +527,7 @@ $overdue_loans = $payment->getOverdueLoans(get_user_id());
 
                 <?php if ($payment_result['remaining_balance'] <= 0): ?>
                     <div class="alert alert-success mb-3">
-                        🎉 Congratulations! You have fully repaid this loan. Your credit score has been increased.
+                        <i class="fas fa-trophy" style="color: var(--success);"></i> Congratulations! You have fully repaid this loan. Your credit score has been increased.
                     </div>
                 <?php endif; ?>
 

@@ -103,7 +103,7 @@ class Payment {
                                  'Payment of ' . format_currency($payment_amount) . ' made');
             
             // Create notification
-            $notif_title = $new_balance <= 0 ? 'Loan Fully Repaid! 🎉' : 'Payment Received';
+            $notif_title = $new_balance <= 0 ? 'Loan Fully Repaid!' : 'Payment Received';
             $notif_message = $new_balance <= 0 
                 ? 'Congratulations! You have fully repaid your loan. Your credit score has been increased.'
                 : 'Your payment of ' . format_currency($payment_amount) . ' has been received. Remaining balance: ' . format_currency($new_balance);

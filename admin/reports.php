@@ -108,6 +108,8 @@ $collection_efficiency = $financial['total_disbursed'] > 0
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reports & Analytics - <?php echo SITE_NAME; ?></title>
     <link rel="stylesheet" href="../assets/css/style.css">
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="../assets/css/fontawesome-all.min.css" />
     <style>
         .chart-container {
             height: 300px;
@@ -189,33 +191,33 @@ $collection_efficiency = $financial['total_disbursed'] > 0
 
         <ul class="sidebar-menu">
             <li><a href="<?php echo site_url('admin/dashboard.php'); ?>">
-                <i>📊</i> Dashboard
+                <i class="fas fa-chart-bar"></i> Dashboard
             </a></li>
             <li><a href="<?php echo site_url('admin/users.php'); ?>">
-                <i>👥</i> Users
+                <i class="fas fa-users"></i> Users
             </a></li>
             <li><a href="<?php echo site_url('admin/loans.php'); ?>">
-                <i>💰</i> Loans
+                <i class="fas fa-wallet"></i> Loans
             </a></li>
             <li><a href="<?php echo site_url('admin/payments.php'); ?>">
-                <i>💳</i> Payments
+                <i class="fas fa-credit-card"></i> Payments
             </a></li>
             <li><a href="<?php echo site_url('admin/verifications.php'); ?>">
-                <i>✅</i> Verifications
+                <i class="fas fa-check-circle"></i> Verifications
             </a></li>
             <li><a href="<?php echo site_url('admin/reports.php'); ?>" class="active">
-                <i>📈</i> Reports
+                <i class="fas fa-chart-bar"></i> Reports
             </a></li>
             <li><a href="<?php echo site_url('admin/settings.php'); ?>">
-                <i>⚙️</i> Settings
+                <i class="fas fa-cog"></i> Settings
             </a></li>
             <li style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-color);">
                 <a href="<?php echo site_url('dashboard.php'); ?>">
-                    <i>👤</i> User View
+                    <i class="fas fa-user"></i> User View
                 </a>
             </li>
             <li><a href="<?php echo site_url('logout.php'); ?>">
-                <i>🚪</i> Logout
+                <i class="fas fa-sign-out-alt"></i> Logout
             </a></li>
         </ul>
     </aside>
@@ -233,7 +235,7 @@ $collection_efficiency = $financial['total_disbursed'] > 0
                         🖨️ Print Report
                     </button>
                     <button onclick="exportToCSV()" class="btn btn-primary">
-                        📊 Export CSV
+                        <i class="fas fa-chart-line"></i> Export CSV
                     </button>
                 </div>
             </div>

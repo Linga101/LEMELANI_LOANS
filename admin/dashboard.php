@@ -123,6 +123,8 @@ $daily_loans = $daily_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - <?php echo SITE_NAME; ?></title>
     <link rel="stylesheet" href="../assets/css/style.css">
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="../assets/css/fontawesome-all.min.css" />
     <style>
         .admin-header {
             background: var(--dark-card);
@@ -302,19 +304,19 @@ $daily_loans = $daily_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
 
         <ul class="sidebar-menu">
             <li><a href="<?php echo site_url('admin/dashboard.php'); ?>" class="active">
-                <i>📊</i> Dashboard
+                <i class="fas fa-chart-bar"></i> Dashboard
             </a></li>
             <li><a href="<?php echo site_url('admin/users.php'); ?>">
-                <i>👥</i> Users
+                <i class="fas fa-users"></i> Users
             </a></li>
             <li><a href="<?php echo site_url('admin/loans.php'); ?>">
-                <i>💰</i> Loans
+                <i class="fas fa-wallet"></i> Loans
             </a></li>
             <li><a href="<?php echo site_url('admin/payments.php'); ?>">
-                <i>💳</i> Payments
+                <i class="fas fa-credit-card"></i> Payments
             </a></li>
             <li><a href="<?php echo site_url('admin/verifications.php'); ?>">
-                <i>✅</i> Verifications
+                <i class="fas fa-check-circle"></i> Verifications
                 <?php if (count($pending_verifications) > 0): ?>
                     <span class="badge badge-warning" style="margin-left: auto; font-size: 0.75rem;">
                         <?php echo count($pending_verifications); ?>
@@ -322,18 +324,18 @@ $daily_loans = $daily_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
                 <?php endif; ?>
             </a></li>
             <li><a href="<?php echo site_url('admin/reports.php'); ?>">
-                <i>📈</i> Reports
+                <i class="fas fa-chart-bar"></i> Reports
             </a></li>
             <li><a href="<?php echo site_url('admin/settings.php'); ?>">
-                <i>⚙️</i> Settings
+                <i class="fas fa-cog"></i> Settings
             </a></li>
             <li style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-color);">
                 <a href="<?php echo site_url('dashboard.php'); ?>">
-                    <i>👤</i> User View
+                    <i class="fas fa-user"></i> User View
                 </a>
             </li>
             <li><a href="<?php echo site_url('logout.php'); ?>">
-                <i>🚪</i> Logout
+                <i class="fas fa-sign-out-alt"></i> Logout
             </a></li>
         </ul>
     </aside>
@@ -362,7 +364,7 @@ $daily_loans = $daily_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
                             <div class="metric-value"><?php echo number_format($stats['users']['total_users'] ?? 0); ?></div>
                             <div class="metric-label">Total Users</div>
                         </div>
-                        <div class="metric-icon">👥</div>
+                        <div class="metric-icon"><i class="fas fa-users"></i></div>
                     </div>
                     <div class="metric-change">
                         <?php echo number_format($stats['users']['verified_users'] ?? 0); ?> verified
@@ -375,7 +377,7 @@ $daily_loans = $daily_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
                             <div class="metric-value"><?php echo format_currency($stats['loans']['total_disbursed']); ?></div>
                             <div class="metric-label">Total Disbursed</div>
                         </div>
-                        <div class="metric-icon">💰</div>
+                        <div class="metric-icon"><i class="fas fa-wallet"></i></div>
                     </div>
                     <div class="metric-change">
                         <?php echo number_format($stats['loans']['total_loans'] ?? 0); ?> loans
@@ -388,7 +390,7 @@ $daily_loans = $daily_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
                             <div class="metric-value"><?php echo format_currency($stats['loans']['total_outstanding']); ?></div>
                             <div class="metric-label">Outstanding Balance</div>
                         </div>
-                        <div class="metric-icon">📊</div>
+                        <div class="metric-icon"><i class="fas fa-chart-line"></i></div>
                     </div>
                     <div class="metric-change">
                         <?php echo number_format($stats['loans']['active_loans'] ?? 0); ?> active loans
@@ -401,7 +403,7 @@ $daily_loans = $daily_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
                             <div class="metric-value"><?php echo $repayment_rate; ?>%</div>
                             <div class="metric-label">Repayment Rate</div>
                         </div>
-                        <div class="metric-icon">✅</div>
+                        <div class="metric-icon"><i class="fas fa-check-circle" style="color: var(--success);"></i></div>
                     </div>
                     <div class="metric-change <?php echo $default_rate > 10 ? 'negative' : 'positive'; ?>">
                         <?php echo $default_rate; ?>% default rate
@@ -452,7 +454,7 @@ $daily_loans = $daily_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div style="padding: 1rem;">
                     <div class="quick-actions">
                         <a href="verifications.php" class="quick-action-btn">
-                            <span class="quick-action-icon">✅</span>
+                            <span class="quick-action-icon"><i class="fas fa-check-circle" style="color: var(--success);"></i></span>
                             <div>
                                 <strong>Verify Users</strong>
                                 <p class="text-secondary" style="margin: 0; font-size: 0.75rem;">
@@ -462,7 +464,7 @@ $daily_loans = $daily_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
                         </a>
 
                         <a href="loans.php?status=pending" class="quick-action-btn">
-                            <span class="quick-action-icon">💰</span>
+                            <span class="quick-action-icon"><i class="fas fa-wallet"></i></span>
                             <div>
                                 <strong>Review Loans</strong>
                                 <p class="text-secondary" style="margin: 0; font-size: 0.75rem;">
@@ -472,7 +474,7 @@ $daily_loans = $daily_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
                         </a>
 
                         <a href="loans.php?status=overdue" class="quick-action-btn">
-                            <span class="quick-action-icon">⚠️</span>
+                            <span class="quick-action-icon"><i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i></span>
                             <div>
                                 <strong>Manage Overdue</strong>
                                 <p class="text-secondary" style="margin: 0; font-size: 0.75rem;">
@@ -482,7 +484,7 @@ $daily_loans = $daily_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
                         </a>
 
                         <a href="reports.php" class="quick-action-btn">
-                            <span class="quick-action-icon">📈</span>
+                            <span class="quick-action-icon"><i class="fas fa-chart-line"></i></span>
                             <div>
                                 <strong>View Reports</strong>
                                 <p class="text-secondary" style="margin: 0; font-size: 0.75rem;">Generate insights</p>
@@ -534,14 +536,14 @@ $daily_loans = $daily_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                     <?php if (empty($high_risk_loans)): ?>
                         <div style="padding: 2rem; text-align: center; color: var(--text-secondary);">
-                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">✅</div>
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-check-circle" style="color: var(--success);"></i></div>
                             <p style="font-size: 0.875rem;">No high risk loans</p>
                         </div>
                     <?php else: ?>
                         <div>
                             <?php foreach ($high_risk_loans as $risk_loan): ?>
                                 <div class="activity-item">
-                                    <div class="activity-icon">⚠️</div>
+                                    <div class="activity-icon"><i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i></div>
                                     <div class="activity-content">
                                         <div style="font-weight: 500;">
                                             <?php echo htmlspecialchars($risk_loan['full_name']); ?>
@@ -573,13 +575,13 @@ $daily_loans = $daily_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <div class="activity-icon">
                                     <?php 
                                     echo match($activity['status']) {
-                                        'pending' => '⏳',
-                                        'approved' => '✅',
-                                        'rejected' => '❌',
-                                        'active' => '💰',
-                                        'repaid' => '✔️',
-                                        'overdue' => '⚠️',
-                                        default => '📄'
+                                        'pending' => '<i class="fas fa-hourglass-half"></i>',
+                                        'approved' => '<i class="fas fa-check-circle" style="color: var(--success);"></i>',
+                                        'rejected' => '<i class="fas fa-times-circle" style="color: var(--error);"></i>',
+                                        'active' => '<i class="fas fa-wallet"></i>',
+                                        'repaid' => '<i class="fas fa-check" style="color: var(--success);"></i>',
+                                        'overdue' => '<i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i>',
+                                        default => '<i class="fas fa-file-alt"></i>'
                                     };
                                     ?>
                                 </div>
@@ -619,7 +621,7 @@ $daily_loans = $daily_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
                     <div>
                         <?php foreach (array_slice($recent_payments, 0, 5) as $payment): ?>
                             <div class="activity-item">
-                                <div class="activity-icon" style="background: rgba(16, 185, 129, 0.2);">💳</div>
+                                <div class="activity-icon" style="background: rgba(16, 185, 129, 0.2);"><i class="fas fa-credit-card"></i></div>
                                 <div class="activity-content">
                                     <div style="font-weight: 500;">
                                         <?php echo htmlspecialchars($payment['full_name']); ?>

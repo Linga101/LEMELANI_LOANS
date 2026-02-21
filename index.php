@@ -13,6 +13,8 @@ if (is_logged_in()) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo SITE_NAME; ?> - <?php echo SITE_TAGLINE; ?></title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="assets/css/fontawesome-all.min.css" />
     <style>
         /* Landing page specific styles */
         .hero-section {
@@ -73,18 +75,7 @@ if (is_logged_in()) {
             box-shadow: 0 10px 30px rgba(16, 185, 129, 0.2);
         }
 
-        .feature-icon {
-            width: 60px;
-            height: 60px;
-            background: rgba(16, 185, 129, 0.2);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1.5rem;
-            font-size: 2rem;
-        }
-
+        
         .feature-title {
             font-size: 1.25rem;
             margin-bottom: 1rem;
@@ -216,7 +207,7 @@ if (is_logged_in()) {
 
         <div class="feature-grid">
             <div class="feature-card">
-                <div class="feature-icon">⚡</div>
+                <div class="feature-icon"><i class="fas fa-bolt"></i></div>
                 <h3 class="feature-title">Instant Approval</h3>
                 <p class="feature-description">
                     Our automated scoring algorithm provides instant loan decisions. No waiting, no hassle.
@@ -224,7 +215,7 @@ if (is_logged_in()) {
             </div>
 
             <div class="feature-card">
-                <div class="feature-icon">🔒</div>
+                <div class="feature-icon"><i class="fas fa-lock"></i></div>
                 <h3 class="feature-title">Secure & Verified</h3>
                 <p class="feature-description">
                     National ID and selfie verification ensure security while protecting your identity.
@@ -232,7 +223,7 @@ if (is_logged_in()) {
             </div>
 
             <div class="feature-card">
-                <div class="feature-icon">💳</div>
+                <div class="feature-icon"><i class="fas fa-credit-card"></i></div>
                 <h3 class="feature-title">Multiple Payment Options</h3>
                 <p class="feature-description">
                     Repay via Airtel Money, TNM Mpamba, Sticpay, Mastercard, Visa, or Binance.
@@ -240,7 +231,7 @@ if (is_logged_in()) {
             </div>
 
             <div class="feature-card">
-                <div class="feature-icon">📈</div>
+                <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
                 <h3 class="feature-title">Build Credit History</h3>
                 <p class="feature-description">
                     Every repayment builds your credit score, unlocking larger loans over time.
@@ -248,7 +239,7 @@ if (is_logged_in()) {
             </div>
 
             <div class="feature-card">
-                <div class="feature-icon">🔔</div>
+                <div class="feature-icon"><i class="fas fa-bell"></i></div>
                 <h3 class="feature-title">Smart Reminders</h3>
                 <p class="feature-description">
                     Never miss a payment with automatic reminders via SMS, email, and in-app notifications.
@@ -256,7 +247,7 @@ if (is_logged_in()) {
             </div>
 
             <div class="feature-card">
-                <div class="feature-icon">📱</div>
+                <div class="feature-icon"><i class="fas fa-mobile-alt"></i></div>
                 <h3 class="feature-title">Mobile-First Design</h3>
                 <p class="feature-description">
                     Access your loans anytime, anywhere from your phone or computer.
@@ -274,7 +265,7 @@ if (is_logged_in()) {
 
         <div class="feature-grid">
             <div class="feature-card">
-                <div class="feature-icon">1️⃣</div>
+                <div class="feature-icon step-icon">1</div>
                 <h3 class="feature-title">Register & Verify</h3>
                 <p class="feature-description">
                     Create your account with your National ID and take a quick selfie for verification.
@@ -282,7 +273,7 @@ if (is_logged_in()) {
             </div>
 
             <div class="feature-card">
-                <div class="feature-icon">2️⃣</div>
+                <div class="feature-icon step-icon">2</div>
                 <h3 class="feature-title">Apply for Loan</h3>
                 <p class="feature-description">
                     Choose your loan amount (MK 10,000 - MK 300,000) and get instant approval.
@@ -290,7 +281,7 @@ if (is_logged_in()) {
             </div>
 
             <div class="feature-card">
-                <div class="feature-icon">3️⃣</div>
+                <div class="feature-icon step-icon">3</div>
                 <h3 class="feature-title">Receive & Repay</h3>
                 <p class="feature-description">
                     Money is disbursed instantly. Repay flexibly using your preferred payment method.

@@ -82,6 +82,8 @@ $unread_count = $unread_stmt->fetch(PDO::FETCH_ASSOC)['unread'];
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notifications - <?php echo SITE_NAME; ?></title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="assets/css/fontawesome-all.min.css" />
     <style>
         .filter-tabs {
             display: flex;
@@ -224,22 +226,22 @@ $unread_count = $unread_stmt->fetch(PDO::FETCH_ASSOC)['unread'];
 
         <ul class="sidebar-menu">
             <li><a href="<?php echo site_url('dashboard.php'); ?>">
-                <i>🏠</i> Dashboard
+                <i class="fas fa-home"></i> Dashboard
             </a></li>
             <li><a href="<?php echo site_url('loans.php'); ?>">
-                <i>💰</i> My Loans
+                <i class="fas fa-wallet"></i> My Loans
             </a></li>
             <li><a href="<?php echo site_url('apply-loan.php'); ?>">
-                <i>➕</i> Apply for Loan
+                <i class="fas fa-plus-circle"></i> Apply for Loan
             </a></li>
             <li><a href="<?php echo site_url('repayments.php'); ?>">
-                <i>💳</i> Repayments
+                <i class="fas fa-credit-card"></i> Repayments
             </a></li>
             <li><a href="<?php echo site_url('credit-history.php'); ?>">
-                <i>📊</i> Credit History
+                <i class="fas fa-chart-line"></i> Credit History
             </a></li>
             <li><a href="<?php echo site_url('notifications.php'); ?>" class="active">
-                <i>🔔</i> Notifications
+                <i class="fas fa-bell"></i> Notifications
                 <?php if ($unread_count > 0): ?>
                     <span class="badge badge-danger" style="margin-left: auto; font-size: 0.75rem;">
                         <?php echo $unread_count; ?>
@@ -247,10 +249,10 @@ $unread_count = $unread_stmt->fetch(PDO::FETCH_ASSOC)['unread'];
                 <?php endif; ?>
             </a></li>
             <li><a href="<?php echo site_url('profile.php'); ?>">
-                <i>👤</i> Profile
+                <i class="fas fa-user"></i> Profile
             </a></li>
             <li><a href="<?php echo site_url('logout.php'); ?>">
-                <i>🚪</i> Logout
+                <i class="fas fa-sign-out-alt"></i> Logout
             </a></li>
         </ul>
     </aside>
@@ -321,7 +323,7 @@ $unread_count = $unread_stmt->fetch(PDO::FETCH_ASSOC)['unread'];
             <?php if (empty($notifications)): ?>
                 <div class="card">
                     <div style="text-align: center; padding: 4rem; color: var(--text-secondary);">
-                        <div style="font-size: 5rem; margin-bottom: 1rem;">🔔</div>
+                        <div style="font-size: 5rem; margin-bottom: 1rem;"><i class="fas fa-bell"></i></div>
                         <h3>No Notifications</h3>
                         <p>You're all caught up! New notifications will appear here.</p>
                     </div>
@@ -333,13 +335,13 @@ $unread_count = $unread_stmt->fetch(PDO::FETCH_ASSOC)['unread'];
                             <div class="notification-icon <?php echo $notif['notification_type']; ?>">
                                 <?php 
                                 echo match($notif['notification_type']) {
-                                    'approval' => '✅',
-                                    'rejection' => '❌',
-                                    'payment_received' => '💳',
-                                    'reminder' => '⏰',
-                                    'overdue' => '⚠️',
-                                    'system' => 'ℹ️',
-                                    default => '🔔'
+                                    'approval' => '<i class="fas fa-check-circle"></i>',
+                                    'rejection' => '<i class="fas fa-times-circle"></i>',
+                                    'payment_received' => '<i class="fas fa-credit-card"></i>',
+                                    'reminder' => '<i class="fas fa-clock"></i>',
+                                    'overdue' => '<i class="fas fa-exclamation-triangle"></i>',
+                                    'system' => '<i class="fas fa-info-circle"></i>',
+                                    default => '<i class="fas fa-bell"></i>'
                                 };
                                 ?>
                             </div>

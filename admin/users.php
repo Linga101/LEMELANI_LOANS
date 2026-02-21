@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // Send notification
                 $notif_query = "INSERT INTO notifications (user_id, notification_type, title, message) 
-                              VALUES (:user_id, 'system', 'Account Verified! ✅', 
+                              VALUES (:user_id, 'system', 'Account Verified!', 
                                      'Your account has been verified. You can now apply for loans.')";
                 $notif_stmt = $db->prepare($notif_query);
                 $notif_stmt->execute([':user_id' => $user_id]);
@@ -119,6 +119,8 @@ $active_users = count($user->getAllUsers(['role' => 'customer', 'account_status'
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Management - <?php echo SITE_NAME; ?></title>
     <link rel="stylesheet" href="../assets/css/style.css">
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="../assets/css/fontawesome-all.min.css" />
     <style>
         .filter-bar {
             background: var(--dark-card);
@@ -195,33 +197,33 @@ $active_users = count($user->getAllUsers(['role' => 'customer', 'account_status'
 
         <ul class="sidebar-menu">
             <li><a href="<?php echo site_url('admin/dashboard.php'); ?>">
-                <i>📊</i> Dashboard
+                <i class="fas fa-chart-bar"></i> Dashboard
             </a></li>
             <li><a href="<?php echo site_url('admin/users.php'); ?>" class="active">
-                <i>👥</i> Users
+                <i class="fas fa-users"></i> Users
             </a></li>
             <li><a href="<?php echo site_url('admin/loans.php'); ?>">
-                <i>💰</i> Loans
+                <i class="fas fa-wallet"></i> Loans
             </a></li>
             <li><a href="<?php echo site_url('admin/payments.php'); ?>">
-                <i>💳</i> Payments
+                <i class="fas fa-credit-card"></i> Payments
             </a></li>
             <li><a href="<?php echo site_url('admin/verifications.php'); ?>">
-                <i>✅</i> Verifications
+                <i class="fas fa-check-circle"></i> Verifications
             </a></li>
             <li><a href="<?php echo site_url('admin/reports.php'); ?>">
-                <i>📈</i> Reports
+                <i class="fas fa-chart-bar"></i> Reports
             </a></li>
             <li><a href="<?php echo site_url('admin/settings.php'); ?>">
-                <i>⚙️</i> Settings
+                <i class="fas fa-cog"></i> Settings
             </a></li>
             <li style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-color);">
                 <a href="<?php echo site_url('dashboard.php'); ?>">
-                    <i>👤</i> User View
+                    <i class="fas fa-user"></i> User View
                 </a>
             </li>
             <li><a href="<?php echo site_url('logout.php'); ?>">
-                <i>🚪</i> Logout
+                <i class="fas fa-sign-out-alt"></i> Logout
             </a></li>
         </ul>
     </aside>
@@ -386,6 +388,8 @@ $active_users = count($user->getAllUsers(['role' => 'customer', 'account_status'
                                                         class="btn btn-secondary btn-sm">
                                                     Credit
                                                 </button>
+
+                                                <a href="<?php echo site_url('admin/assess_score.php?user_id=' . $u['user_id']); ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">Assess</a>
                                                 
                                                 <?php if ($u['verification_status'] === 'pending'): ?>
                                                     <form method="POST" style="display: inline;">

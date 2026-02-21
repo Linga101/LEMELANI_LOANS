@@ -116,6 +116,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile - <?php echo SITE_NAME; ?></title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="assets/css/fontawesome-all.min.css" />
     <style>
         .profile-header {
             background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.05) 100%);
@@ -261,28 +263,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <ul class="sidebar-menu">
             <li><a href="<?php echo site_url('dashboard.php'); ?>">
-                <i>🏠</i> Dashboard
+                <i class="fas fa-home"></i> Dashboard
             </a></li>
             <li><a href="<?php echo site_url('loans.php'); ?>">
-                <i>💰</i> My Loans
+                <i class="fas fa-wallet"></i> My Loans
             </a></li>
             <li><a href="<?php echo site_url('apply-loan.php'); ?>">
-                <i>➕</i> Apply for Loan
+                <i class="fas fa-plus-circle"></i> Apply for Loan
             </a></li>
             <li><a href="<?php echo site_url('repayments.php'); ?>">
-                <i>💳</i> Repayments
+                <i class="fas fa-credit-card"></i> Repayments
             </a></li>
             <li><a href="<?php echo site_url('credit-history.php'); ?>">
-                <i>📊</i> Credit History
+                <i class="fas fa-chart-line"></i> Credit History
             </a></li>
             <li><a href="<?php echo site_url('notifications.php'); ?>">
-                <i>🔔</i> Notifications
+                <i class="fas fa-bell"></i> Notifications
             </a></li>
             <li><a href="<?php echo site_url('profile.php'); ?>" class="active">
-                <i>👤</i> Profile
+                <i class="fas fa-user"></i> Profile
             </a></li>
             <li><a href="<?php echo site_url('logout.php'); ?>">
-                <i>🚪</i> Logout
+                <i class="fas fa-sign-out-alt"></i> Logout
             </a></li>
         </ul>
     </aside>
@@ -477,10 +479,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                                     <img src="<?php echo UPLOAD_URL . $user_data['selfie_path']; ?>" alt="Selfie">
                                     <div class="text-secondary" style="font-size: 0.875rem;">
-                                        ✅ Uploaded and verified
+                                        <i class="fas fa-check" style="color: var(--success);"></i> Uploaded and verified
                                     </div>
                                 <?php else: ?>
-                                    <div style="font-size: 4rem; margin: 2rem 0;">📸</div>
+                                    <div style="font-size: 4rem; margin: 2rem 0;"><i class="fas fa-camera"></i></div>
                                     <div class="text-secondary">No selfie uploaded</div>
                                 <?php endif; ?>
                             </div>
@@ -491,7 +493,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <?php if (!empty($user_data['id_document_path'])): ?>
 
                                     <?php if (strpos($user_data['id_document_path'], '.pdf') !== false): ?>
-                                        <div style="font-size: 4rem; margin: 2rem 0;">📄</div>
+                                        <div style="font-size: 4rem; margin: 2rem 0;"><i class="fas fa-file-alt"></i></div>
                                         <a href="<?php echo UPLOAD_URL . $user_data['id_document_path']; ?>" 
                                            target="_blank" class="btn btn-secondary btn-sm">
                                             View PDF
@@ -500,10 +502,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <img src="<?php echo UPLOAD_URL . $user_data['id_document_path']; ?>" alt="National ID">
                                     <?php endif; ?>
                                     <div class="text-secondary" style="font-size: 0.875rem; margin-top: 1rem;">
-                                        ✅ Uploaded and verified
+                                        <i class="fas fa-check" style="color: var(--success);"></i> Uploaded and verified
                                     </div>
                                 <?php else: ?>
-                                    <div style="font-size: 4rem; margin: 2rem 0;">🆔</div>
+                                    <div style="font-size: 4rem; margin: 2rem 0;"><i class="fas fa-id-card"></i></div>
                                     <div class="text-secondary">No ID uploaded</div>
                                 <?php endif; ?>
                             </div>
@@ -511,17 +513,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         <?php if ($user_data['verification_status'] === 'pending'): ?>
                             <div class="alert alert-warning mt-3">
-                                <strong>⏳ Verification Pending</strong><br>
+                                <strong><i class="fas fa-hourglass-half"></i> Verification Pending</strong><br>
                                 Your documents are currently being reviewed. You will receive a notification once verified.
                             </div>
                         <?php elseif ($user_data['verification_status'] === 'rejected'): ?>
                             <div class="alert alert-error mt-3">
-                                <strong>❌ Verification Rejected</strong><br>
+                                <strong><i class="fas fa-times-circle" style="color: var(--error);"></i> Verification Rejected</strong><br>
                                 Your documents were not approved. Please contact support for assistance.
                             </div>
                         <?php else: ?>
                             <div class="alert alert-success mt-3">
-                                <strong>✅ Documents Verified</strong><br>
+                                <strong><i class="fas fa-check-circle" style="color: var(--success);"></i> Documents Verified</strong><br>
                                 Your account is fully verified and you can apply for loans.
                             </div>
                         <?php endif; ?>

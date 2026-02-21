@@ -41,6 +41,8 @@ $payments = $payment_stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Loan Details - <?php echo SITE_NAME; ?></title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="assets/css/fontawesome-all.min.css" />
     <style>
         .detail-card {
             background: var(--dark-card);
@@ -145,28 +147,28 @@ $payments = $payment_stmt->fetchAll(PDO::FETCH_ASSOC);
 
         <ul class="sidebar-menu">
             <li><a href="<?php echo site_url('dashboard.php'); ?>">
-                <i>🏠</i> Dashboard
+                <i class="fas fa-home"></i> Dashboard
             </a></li>
             <li><a href="<?php echo site_url('loans.php'); ?>" class="active">
-                <i>💰</i> My Loans
+                <i class="fas fa-wallet"></i> My Loans
             </a></li>
             <li><a href="<?php echo site_url('apply-loan.php'); ?>">
-                <i>➕</i> Apply for Loan
+                <i class="fas fa-plus-circle"></i> Apply for Loan
             </a></li>
             <li><a href="<?php echo site_url('repayments.php'); ?>">
-                <i>💳</i> Repayments
+                <i class="fas fa-credit-card"></i> Repayments
             </a></li>
             <li><a href="<?php echo site_url('credit-history.php'); ?>">
-                <i>📊</i> Credit History
+                <i class="fas fa-chart-line"></i> Credit History
             </a></li>
             <li><a href="<?php echo site_url('notifications.php'); ?>">
-                <i>🔔</i> Notifications
+                <i class="fas fa-bell"></i> Notifications
             </a></li>
             <li><a href="<?php echo site_url('profile.php'); ?>">
-                <i>👤</i> Profile
+                <i class="fas fa-user"></i> Profile
             </a></li>
             <li><a href="<?php echo site_url('logout.php'); ?>">
-                <i>🚪</i> Logout
+                <i class="fas fa-sign-out-alt"></i> Logout
             </a></li>
         </ul>
     </aside>

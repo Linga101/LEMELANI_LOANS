@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Send notification
             $notif_query = "INSERT INTO notifications (user_id, notification_type, title, message) 
-                          VALUES (:user_id, 'system', 'Account Verified! ✅', 
+                          VALUES (:user_id, 'system', 'Account Verified!', 
                                  'Your account has been verified. You can now apply for loans.')";
             $notif_stmt = $db->prepare($notif_query);
             $notif_stmt->execute([':user_id' => $user_id]);
@@ -98,6 +98,8 @@ $rejected_users = $rejected_stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verifications - <?php echo SITE_NAME; ?></title>
     <link rel="stylesheet" href="../assets/css/style.css">
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="../assets/css/fontawesome-all.min.css" />
     <style>
         .verification-card {
             background: var(--dark-card);
@@ -246,19 +248,19 @@ $rejected_users = $rejected_stmt->fetchAll(PDO::FETCH_ASSOC);
 
         <ul class="sidebar-menu">
             <li><a href="<?php echo site_url('admin/dashboard.php'); ?>">
-                <i>📊</i> Dashboard
+                <i class="fas fa-chart-bar"></i> Dashboard
             </a></li>
             <li><a href="<?php echo site_url('admin/users.php'); ?>">
-                <i>👥</i> Users
+                <i class="fas fa-users"></i> Users
             </a></li>
             <li><a href="<?php echo site_url('admin/loans.php'); ?>">
-                <i>💰</i> Loans
+                <i class="fas fa-wallet"></i> Loans
             </a></li>
             <li><a href="<?php echo site_url('admin/payments.php'); ?>">
-                <i>💳</i> Payments
+                <i class="fas fa-credit-card"></i> Payments
             </a></li>
             <li><a href="<?php echo site_url('admin/verifications.php'); ?>" class="active">
-                <i>✅</i> Verifications
+                <i class="fas fa-check-circle"></i> Verifications
                 <?php if (count($pending_users) > 0): ?>
                     <span class="badge badge-warning" style="margin-left: auto; font-size: 0.75rem;">
                         <?php echo count($pending_users); ?>
@@ -266,18 +268,18 @@ $rejected_users = $rejected_stmt->fetchAll(PDO::FETCH_ASSOC);
                 <?php endif; ?>
             </a></li>
             <li><a href="<?php echo site_url('admin/reports.php'); ?>">
-                <i>📈</i> Reports
+                <i class="fas fa-chart-bar"></i> Reports
             </a></li>
             <li><a href="<?php echo site_url('admin/settings.php'); ?>">
-                <i>⚙️</i> Settings
+                <i class="fas fa-cog"></i> Settings
             </a></li>
             <li style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-color);">
                 <a href="<?php echo site_url('dashboard.php'); ?>">
-                    <i>👤</i> User View
+                    <i class="fas fa-user"></i> User View
                 </a>
             </li>
             <li><a href="<?php echo site_url('logout.php'); ?>">
-                <i>🚪</i> Logout
+                <i class="fas fa-sign-out-alt"></i> Logout
             </a></li>
         </ul>
     </aside>
@@ -336,7 +338,7 @@ $rejected_users = $rejected_stmt->fetchAll(PDO::FETCH_ASSOC);
                 <?php if (empty($pending_users)): ?>
                     <div class="card">
                         <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
-                            <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
+                            <div style="font-size: 4rem; margin-bottom: 1rem;"><i class="fas fa-check-circle" style="color: var(--success);"></i></div>
                             <h3>No Pending Verifications</h3>
                             <p>All users have been verified or rejected.</p>
                         </div>
@@ -373,7 +375,7 @@ $rejected_users = $rejected_stmt->fetchAll(PDO::FETCH_ASSOC);
 
                                         <img src="<?php echo UPLOAD_URL . $u['selfie_path']; ?>" alt="Selfie">
                                     <?php else: ?>
-                                        <div class="document-icon">📸</div>
+                                        <div class="document-icon"><i class="fas fa-camera"></i></div>
                                     <?php endif; ?>
                                     <div style="font-size: 0.875rem; font-weight: 500;">Selfie Photo</div>
                                     <div class="text-secondary" style="font-size: 0.75rem;">Click to view</div>
@@ -383,12 +385,12 @@ $rejected_users = $rejected_stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <div class="document-preview" onclick="viewDocument('<?php echo UPLOAD_URL . $u['id_document_path']; ?>', 'National ID - <?php echo htmlspecialchars($u['full_name']); ?>')">
                                     <?php if (!empty($u['id_document_path'])): ?>
                                         <?php if (strpos($u['id_document_path'], '.pdf') !== false): ?>
-                                            <div class="document-icon">📄</div>
+                                            <div class="document-icon"><i class="fas fa-file-alt"></i></div>
                                         <?php else: ?>
                                             <img src="<?php echo UPLOAD_URL . $u['id_document_path']; ?>" alt="National ID">
                                         <?php endif; ?>
                                     <?php else: ?>
-                                        <div class="document-icon">🆔</div>
+                                        <div class="document-icon"><i class="fas fa-id-card"></i></div>
                                     <?php endif; ?>
                                     <div style="font-size: 0.875rem; font-weight: 500;">National ID</div>
                                     <div class="text-secondary" style="font-size: 0.75rem;">Click to view</div>
@@ -400,13 +402,13 @@ $rejected_users = $rejected_stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <input type="hidden" name="user_id" value="<?php echo $u['user_id']; ?>">
                                     <input type="hidden" name="action" value="verify">
                                     <button type="submit" class="btn btn-primary btn-block">
-                                        ✅ Verify User
+                                        <i class="fas fa-check-circle"></i> Verify User
                                     </button>
                                 </form>
 
                                 <button onclick="openRejectModal(<?php echo $u['user_id']; ?>, '<?php echo htmlspecialchars($u['full_name']); ?>')" 
                                         class="btn btn-danger btn-block" style="flex: 1;">
-                                    ❌ Reject
+                                    <i class="fas fa-times-circle"></i> Reject
                                 </button>
                             </div>
                         </div>

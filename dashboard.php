@@ -32,6 +32,8 @@ $notifications = $notif_stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - <?php echo SITE_NAME; ?></title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="assets/css/fontawesome-all.min.css" />
 </head>
 <body>
     <div class="gradient-overlay"></div>
@@ -45,22 +47,22 @@ $notifications = $notif_stmt->fetchAll(PDO::FETCH_ASSOC);
 
         <ul class="sidebar-menu">
             <li><a href="<?php echo site_url('dashboard.php'); ?>" class="active">
-                <i>🏠</i> Dashboard
+                <i class="fas fa-home"></i> Dashboard
             </a></li>
             <li><a href="<?php echo site_url('loans.php'); ?>">
-                <i>💰</i> My Loans
+                <i class="fas fa-wallet"></i> My Loans
             </a></li>
             <li><a href="<?php echo site_url('apply-loan.php'); ?>">
-                <i>➕</i> Apply for Loan
+                <i class="fas fa-plus-circle"></i> Apply for Loan
             </a></li>
             <li><a href="<?php echo site_url('repayments.php'); ?>">
-                <i>💳</i> Repayments
+                <i class="fas fa-credit-card"></i> Repayments
             </a></li>
             <li><a href="<?php echo site_url('credit-history.php'); ?>">
-                <i>📊</i> Credit History
+                <i class="fas fa-chart-line"></i> Credit History
             </a></li>
             <li><a href="<?php echo site_url('notifications.php'); ?>">
-                <i>🔔</i> Notifications
+                <i class="fas fa-bell"></i> Notifications
                 <?php if (count(array_filter($notifications, fn($n) => !$n['is_read'])) > 0): ?>
                     <span class="badge badge-danger" style="margin-left: auto;">
                         <?php echo count(array_filter($notifications, fn($n) => !$n['is_read'])); ?>
@@ -68,10 +70,10 @@ $notifications = $notif_stmt->fetchAll(PDO::FETCH_ASSOC);
                 <?php endif; ?>
             </a></li>
             <li><a href="<?php echo site_url('profile.php'); ?>">
-                <i>👤</i> Profile
+                <i class="fas fa-user"></i> Profile
             </a></li>
             <li><a href="<?php echo site_url('logout.php'); ?>">
-                <i>🚪</i> Logout
+                <i class="fas fa-sign-out-alt"></i> Logout
             </a></li>
         </ul>
     </aside>
@@ -82,7 +84,7 @@ $notifications = $notif_stmt->fetchAll(PDO::FETCH_ASSOC);
             <!-- Header -->
             <div class="flex-between mb-4">
                 <div>
-                    <h1>Welcome back, <?php echo htmlspecialchars($_SESSION['full_name']); ?>! 👋</h1>
+                    <h1>Welcome back, <?php echo htmlspecialchars($_SESSION['full_name']); ?>! <i class="fas fa-hand-paper"></i></h1>
                     <p class="text-secondary">Here's what's happening with your account today.</p>
                 </div>
                 <div>
@@ -93,7 +95,7 @@ $notifications = $notif_stmt->fetchAll(PDO::FETCH_ASSOC);
             <!-- Verification Alert -->
             <?php if ($user_data['verification_status'] !== 'verified'): ?>
                 <div class="alert alert-warning mb-3">
-                    <strong>⚠️ Account Verification Pending</strong><br>
+                    <strong><i class="fas fa-exclamation-triangle"></i> Account Verification Pending</strong><br>
                     Your account is currently under verification. You will be able to apply for loans once verified.
                 </div>
             <?php endif; ?>
@@ -167,13 +169,13 @@ $notifications = $notif_stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
                     <a href="<?php echo site_url('apply-loan.php'); ?>" class="btn btn-accent" style="text-decoration: none;">
-                        ➕ Apply for New Loan
+                        <i class="fas fa-plus-circle"></i> Apply for New Loan
                     </a>
                     <a href="<?php echo site_url('repayments.php'); ?>" class="btn btn-primary" style="text-decoration: none;">
-                        💳 Make Payment
+                        <i class="fas fa-credit-card"></i> Make Payment
                     </a>
                     <a href="<?php echo site_url('credit-history.php'); ?>" class="btn btn-secondary" style="text-decoration: none;">
-                        📊 View Credit Report
+                        <i class="fas fa-chart-line"></i> View Credit Report
                     </a>
                 </div>
             </div>
@@ -187,7 +189,7 @@ $notifications = $notif_stmt->fetchAll(PDO::FETCH_ASSOC);
 
                 <?php if (empty($recent_loans)): ?>
                     <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
-                        <div style="font-size: 3rem; margin-bottom: 1rem;">💰</div>
+                        <div style="font-size: 3rem; margin-bottom: 1rem;"><i class="fas fa-wallet"></i></div>
                         <p>No loans yet. Apply for your first loan today!</p>
                         <a href="<?php echo site_url('apply-loan.php'); ?>" class="btn btn-primary mt-2">Apply Now</a>
                     </div>

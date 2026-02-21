@@ -163,6 +163,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - <?php echo SITE_NAME; ?></title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="assets/css/fontawesome-all.min.css" />
     <style>
         .auth-container {
             min-height: 100vh;
@@ -331,7 +333,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="file" id="selfie" name="selfie" class="file-upload-input" 
                            accept="image/jpeg,image/png" required>
                     <label for="selfie" class="file-upload-label" id="selfie-label">
-                        <div class="file-upload-icon">📸</div>
+                        <div class="file-upload-icon"><i class="fas fa-camera"></i></div>
                         <div>Click to upload your selfie</div>
                         <small class="form-text">JPG or PNG, max 5MB</small>
                         <div class="file-name" id="selfie-name"></div>
@@ -343,7 +345,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="file" id="id_document" name="id_document" class="file-upload-input" 
                            accept="image/jpeg,image/png,application/pdf" required>
                     <label for="id_document" class="file-upload-label" id="id-label">
-                        <div class="file-upload-icon">🆔</div>
+                        <div class="file-upload-icon"><i class="fas fa-id-card"></i></div>
                         <div>Click to upload your National ID</div>
                         <small class="form-text">JPG, PNG or PDF, max 5MB</small>
                         <div class="file-name" id="id-name"></div>

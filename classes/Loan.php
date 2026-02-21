@@ -226,7 +226,7 @@ class Loan {
 
                     $this->updateUserCreditScore($user_id, 10);
                     $this->logCreditEvent($user_id, 'loan_approved', $loan_id, $application_id, 'Loan approved with score: ' . $score);
-                    $this->createNotification($user_id, 'approval', 'Loan Approved! 🎉',
+                    $this->createNotification($user_id, 'approval', 'Loan Approved!',
                         'Your loan application of ' . format_currency($approved_amount) . ' has been approved and disbursed.',
                         $loan_id);
 
