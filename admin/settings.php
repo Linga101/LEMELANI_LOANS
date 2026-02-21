@@ -69,7 +69,7 @@ $stats_query = "SELECT
                  (SELECT COUNT(*) FROM users WHERE role = 'customer') as total_users,
                  (SELECT COUNT(*) FROM loans) as total_loans,
                  (SELECT COUNT(*) FROM repayments) as total_payments,
-                 (SELECT SUM(loan_amount) FROM loans WHERE status != 'rejected') as total_disbursed";
+                 (SELECT COALESCE(SUM(principal_mwk), 0) FROM loans) as total_disbursed";
 $stats_stmt = $db->prepare($stats_query);
 $stats_stmt->execute();
 $system_stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);

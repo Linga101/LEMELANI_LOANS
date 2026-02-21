@@ -21,8 +21,8 @@ class Payment {
         try {
             $this->conn->beginTransaction();
             
-            // Validate loan
-            $loan_query = "SELECT * FROM " . $this->loans_table . " WHERE loan_id = :loan_id AND user_id = :user_id";
+            // Validate loan (Malawi schema: outstanding_balance_mwk)
+            $loan_query = "SELECT loan_id, user_id, outstanding_balance_mwk AS remaining_balance, status FROM " . $this->loans_table . " WHERE loan_id = :loan_id AND user_id = :user_id";
             $loan_stmt = $this->conn->prepare($loan_query);
             $loan_stmt->execute([
                 ':loan_id' => $data['loan_id'],
@@ -35,7 +35,7 @@ class Payment {
                 throw new Exception("Loan not found");
             }
             
-            if (!in_array($loan['status'], ['active', 'overdue', 'approved', 'disbursed'])) {
+            if (!in_array($loan['status'], ['active', 'overdue'])) {
                 throw new Exception("This loan cannot accept payments");
             }
             
@@ -53,12 +53,12 @@ class Payment {
             // Generate transaction reference
             $transaction_ref = generate_transaction_reference();
             
-            // Insert payment record
+            // Insert payment record (Malawi schema: amount_paid_mwk, payment_reference, due_date)
             $payment_query = "INSERT INTO " . $this->repayments_table . " 
-                            (loan_id, user_id, payment_amount, payment_method, transaction_reference, 
-                             payment_status, is_partial, notes) 
-                            VALUES (:loan_id, :user_id, :payment_amount, :payment_method, :transaction_ref, 
-                                    'completed', :is_partial, :notes)";
+                            (loan_id, user_id, amount_paid_mwk, payment_method, payment_reference, due_date,
+                             payment_status, status, is_partial, notes) 
+                            VALUES (:loan_id, :user_id, :amount_paid, :payment_method, :payment_ref, CURDATE(),
+                                    'completed', 'on_time', :is_partial, :notes)";
             
             $is_partial = $payment_amount < $remaining_balance;
             
@@ -66,21 +66,21 @@ class Payment {
             $payment_stmt->execute([
                 ':loan_id' => $data['loan_id'],
                 ':user_id' => $data['user_id'],
-                ':payment_amount' => $payment_amount,
+                ':amount_paid' => $payment_amount,
                 ':payment_method' => $data['payment_method'],
-                ':transaction_ref' => $transaction_ref,
+                ':payment_ref' => $transaction_ref,
                 ':is_partial' => $is_partial,
                 ':notes' => $data['notes'] ?? null
             ]);
             
             $payment_id = $this->conn->lastInsertId();
             
-            // Update loan remaining balance
+            // Update loan (Malawi: outstanding_balance_mwk; status 'completed' when fully repaid)
             $new_balance = $remaining_balance - $payment_amount;
-            $new_status = $new_balance <= 0 ? 'repaid' : $loan['status'];
+            $new_status = $new_balance <= 0 ? 'completed' : $loan['status'];
             
             $update_loan_query = "UPDATE " . $this->loans_table . " 
-                                 SET remaining_balance = :new_balance, 
+                                 SET outstanding_balance_mwk = :new_balance, 
                                      status = :new_status 
                                  WHERE loan_id = :loan_id";
             
@@ -157,7 +157,7 @@ class Payment {
                 $update_query = "UPDATE " . $this->schedule_table . " 
                                SET amount_paid = amount_due, 
                                    status = 'paid', 
-                                   paid_date = NOW() 
+                                   paid_at = NOW() 
                                WHERE schedule_id = :schedule_id";
                 
                 $update_stmt = $this->conn->prepare($update_query);
@@ -187,9 +187,12 @@ class Payment {
      * Get payment history for a loan
      */
     public function getLoanPayments($loan_id) {
-        $query = "SELECT * FROM " . $this->repayments_table . " 
+        $query = "SELECT repayment_id AS payment_id, loan_id, user_id, amount_paid_mwk AS payment_amount,
+                         payment_method, payment_reference AS transaction_reference, paid_at AS payment_date,
+                         payment_status, status, is_partial, notes
+                  FROM " . $this->repayments_table . " 
                  WHERE loan_id = :loan_id 
-                 ORDER BY payment_date DESC";
+                 ORDER BY paid_at DESC";
         
         $stmt = $this->conn->prepare($query);
         $stmt->execute([':loan_id' => $loan_id]);
@@ -201,11 +204,13 @@ class Payment {
      * Get all payments for a user
      */
     public function getUserPayments($user_id, $limit = null) {
-        $query = "SELECT r.*, l.loan_amount, l.status as loan_status 
+        $query = "SELECT r.repayment_id AS payment_id, r.loan_id, r.user_id, r.amount_paid_mwk AS payment_amount,
+                         r.payment_method, r.payment_reference AS transaction_reference, r.paid_at AS payment_date,
+                         r.payment_status, l.principal_mwk AS loan_amount, l.status as loan_status 
                  FROM " . $this->repayments_table . " r
                  JOIN " . $this->loans_table . " l ON r.loan_id = l.loan_id
                  WHERE r.user_id = :user_id 
-                 ORDER BY r.payment_date DESC";
+                 ORDER BY r.paid_at DESC";
         
         if ($limit) {
             $query .= " LIMIT :limit";
@@ -240,12 +245,13 @@ class Payment {
      * Get overdue loans
      */
     public function getOverdueLoans($user_id = null) {
-        $query = "SELECT l.*, u.full_name, u.email, u.phone 
+        $query = "SELECT l.loan_id, l.user_id, l.principal_mwk AS loan_amount, l.outstanding_balance_mwk AS remaining_balance,
+                         l.due_date, l.status, u.full_name, u.email, u.phone 
                  FROM " . $this->loans_table . " l
                  JOIN users u ON l.user_id = u.user_id
                  WHERE l.status IN ('active', 'overdue') 
                  AND l.due_date < CURDATE()
-                 AND l.remaining_balance > 0";
+                 AND l.outstanding_balance_mwk > 0";
         
         if ($user_id) {
             $query .= " AND l.user_id = :user_id";
@@ -272,7 +278,7 @@ class Payment {
                  SET status = 'overdue' 
                  WHERE status = 'active' 
                  AND due_date < CURDATE() 
-                 AND remaining_balance > 0";
+                 AND outstanding_balance_mwk > 0";
         
         $stmt = $this->conn->prepare($query);
         return $stmt->execute();
@@ -282,7 +288,7 @@ class Payment {
      * Calculate late payment penalty
      */
     public function calculateLatePenalty($loan_id) {
-        $loan_query = "SELECT due_date, remaining_balance FROM " . $this->loans_table . " WHERE loan_id = :loan_id";
+        $loan_query = "SELECT due_date, outstanding_balance_mwk AS remaining_balance FROM " . $this->loans_table . " WHERE loan_id = :loan_id";
         $loan_stmt = $this->conn->prepare($loan_query);
         $loan_stmt->execute([':loan_id' => $loan_id]);
         $loan = $loan_stmt->fetch(PDO::FETCH_ASSOC);
@@ -416,7 +422,7 @@ class Payment {
         $stmt->execute([
             ':user_id' => $user_id,
             ':event_type' => $event_type,
-            ':loan_id' => $loan_id,
+            ':loan_id' => $loan_id ?: null,
             ':description' => $description
         ]);
     }

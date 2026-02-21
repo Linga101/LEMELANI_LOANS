@@ -18,11 +18,13 @@ $payment_result = null;
 // Get loan_id from URL if specified
 $selected_loan_id = intval($_GET['loan_id'] ?? 0);
 
-// Get user's active loans
-$active_loans_query = "SELECT * FROM loans 
+// Get user's active loans (Malawi: outstanding_balance_mwk, status active/overdue)
+$active_loans_query = "SELECT loan_id, user_id, principal_mwk AS loan_amount, outstanding_balance_mwk AS remaining_balance,
+                              due_date, status, total_repayable_mwk AS total_amount
+                       FROM loans 
                        WHERE user_id = :user_id 
-                       AND status IN ('active', 'overdue', 'approved', 'disbursed')
-                       AND remaining_balance > 0
+                       AND status IN ('active', 'overdue')
+                       AND outstanding_balance_mwk > 0
                        ORDER BY due_date ASC";
 $active_loans_stmt = $db->prepare($active_loans_query);
 $active_loans_stmt->execute([':user_id' => get_user_id()]);

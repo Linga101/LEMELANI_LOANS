@@ -12,85 +12,90 @@ $loan_obj = new Loan($db);
 $success = '';
 $errors = [];
 
-// Handle loan actions
+// Handle loan actions (FIFO: application_id for pending applications)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
-    $loan_id = intval($_POST['loan_id'] ?? 0);
-    
+    $application_id = (int)($_POST['application_id'] ?? 0);
+
     switch ($action) {
         case 'approve':
-            $result = $loan_obj->processLoanApplication($loan_id, get_user_id());
+            $result = $loan_obj->processLoanApplication($application_id, get_user_id());
             if ($result['success']) {
-                $success = "Loan processed: " . $result['message'];
+                $success = "Application processed: " . $result['message'];
+                log_audit(get_user_id(), 'LOAN_APPLICATION_PROCESSED', 'loan_applications', $application_id, null, $result);
             } else {
                 $errors[] = $result['message'];
             }
             break;
-            
+
         case 'reject':
             $rejection_reason = sanitize_input($_POST['rejection_reason'] ?? 'Rejected by admin');
-            
-            $update_query = "UPDATE loans 
-                           SET status = 'rejected', rejection_reason = :reason 
-                           WHERE loan_id = :loan_id";
-            $update_stmt = $db->prepare($update_query);
-            
-            if ($update_stmt->execute([':reason' => $rejection_reason, ':loan_id' => $loan_id])) {
-                $success = "Loan rejected successfully";
-                log_audit(get_user_id(), 'LOAN_REJECTED', 'loans', $loan_id, null, ['reason' => $rejection_reason]);
+            $result = $loan_obj->forceRejectApplication($application_id, $rejection_reason, get_user_id());
+            if ($result['success']) {
+                $success = "Application rejected.";
+                log_audit(get_user_id(), 'LOAN_APPLICATION_REJECTED', 'loan_applications', $application_id, null, ['reason' => $rejection_reason]);
             } else {
-                $errors[] = "Failed to reject loan";
+                $errors[] = $result['message'];
             }
             break;
-            
+
         case 'waive_penalty':
-            // Add penalty waiver logic here
-            $success = "Penalty waived (feature to be implemented)";
+            $success = "Penalty waiver (implement when needed)";
             break;
     }
 }
 
-// Get filters
-$filter_status = $_GET['status'] ?? 'all';
+// Pending applications in FIFO order (oldest first)
+$pending_applications = $loan_obj->getPendingApplicationsFifo(100);
 $search = sanitize_input($_GET['search'] ?? '');
-
-// Build query
-$query = "SELECT l.*, u.full_name, u.email, u.phone, u.credit_score 
-          FROM loans l
-          JOIN users u ON l.user_id = u.user_id
-          WHERE 1=1";
-
-$params = [];
-
-if ($filter_status !== 'all') {
-    $query .= " AND l.status = :status";
-    $params[':status'] = $filter_status;
-}
-
 if ($search) {
-    $query .= " AND (u.full_name LIKE :search OR u.email LIKE :search OR l.loan_id LIKE :search)";
-    $params[':search'] = '%' . $search . '%';
+    $pending_applications = array_filter($pending_applications, function ($a) use ($search) {
+        return (stripos($a['full_name'], $search) !== false || stripos($a['email'], $search) !== false || stripos($a['application_ref'], $search) !== false);
+    });
 }
 
-$query .= " ORDER BY l.created_at DESC";
-
-$stmt = $db->prepare($query);
-$stmt->execute($params);
+// Disbursed loans (from loans table with legacy aliases)
+$loans_query = "SELECT l.loan_id, l.application_id, l.user_id, l.principal_mwk AS loan_amount,
+                       l.outstanding_balance_mwk AS remaining_balance, l.due_date, l.status, l.created_at,
+                       u.full_name, u.email, u.phone, u.credit_score
+                FROM loans l
+                JOIN users u ON l.user_id = u.user_id
+                WHERE 1=1";
+$loans_params = [];
+$filter_status = $_GET['status'] ?? 'all';
+if ($filter_status !== 'all') {
+    $loans_query .= " AND l.status = :status";
+    $loans_params[':status'] = $filter_status === 'repaid' ? 'completed' : $filter_status;
+}
+if ($search) {
+    $loans_query .= " AND (u.full_name LIKE :search OR u.email LIKE :search OR l.loan_id = :search_id)";
+    $loans_params[':search'] = '%' . $search . '%';
+    $loans_params[':search_id'] = ctype_digit($search) ? $search : -1;
+}
+$loans_query .= " ORDER BY l.created_at DESC";
+$stmt = $db->prepare($loans_query);
+$stmt->execute($loans_params);
 $loans = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Calculate statistics
-$stats_query = "SELECT 
-                 COUNT(*) as total,
-                 SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-                 SUM(CASE WHEN status IN ('active', 'approved', 'disbursed') THEN 1 ELSE 0 END) as active,
-                 SUM(CASE WHEN status = 'overdue' THEN 1 ELSE 0 END) as overdue,
-                 SUM(CASE WHEN status = 'repaid' THEN 1 ELSE 0 END) as repaid,
-                 SUM(loan_amount) as total_amount,
-                 SUM(remaining_balance) as outstanding
-                FROM loans";
-$stats_stmt = $db->prepare($stats_query);
-$stats_stmt->execute();
-$stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
+// Statistics: pending from loan_applications, rest from loans
+$pending_count = $db->query("SELECT COUNT(*) FROM loan_applications WHERE status IN ('pending','under_review')")->fetchColumn();
+$stats_loans = $db->query("SELECT
+    COUNT(*) as total,
+    SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
+    SUM(CASE WHEN status = 'overdue' THEN 1 ELSE 0 END) as overdue,
+    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as repaid,
+    COALESCE(SUM(principal_mwk), 0) as total_amount,
+    COALESCE(SUM(CASE WHEN status IN ('active','overdue') THEN outstanding_balance_mwk ELSE 0 END), 0) as outstanding
+FROM loans")->fetch(PDO::FETCH_ASSOC);
+$stats = [
+    'total' => $stats_loans['total'],
+    'pending' => $pending_count,
+    'active' => $stats_loans['active'],
+    'overdue' => $stats_loans['overdue'],
+    'repaid' => $stats_loans['repaid'],
+    'total_amount' => $stats_loans['total_amount'],
+    'outstanding' => $stats_loans['outstanding'],
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -208,15 +213,13 @@ $stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
                 </div>
 
                 <div style="flex: 1; min-width: 200px;">
-                    <label class="form-label">Status</label>
+                    <label class="form-label">Status (disbursed loans)</label>
                     <select name="status" class="form-control">
-                        <option value="all" <?php echo $filter_status === 'all' ? 'selected' : ''; ?>>All Loans</option>
-                        <option value="pending" <?php echo $filter_status === 'pending' ? 'selected' : ''; ?>>Pending</option>
-                        <option value="approved" <?php echo $filter_status === 'approved' ? 'selected' : ''; ?>>Approved</option>
+                        <option value="all" <?php echo $filter_status === 'all' ? 'selected' : ''; ?>>All</option>
                         <option value="active" <?php echo $filter_status === 'active' ? 'selected' : ''; ?>>Active</option>
                         <option value="overdue" <?php echo $filter_status === 'overdue' ? 'selected' : ''; ?>>Overdue</option>
                         <option value="repaid" <?php echo $filter_status === 'repaid' ? 'selected' : ''; ?>>Repaid</option>
-                        <option value="rejected" <?php echo $filter_status === 'rejected' ? 'selected' : ''; ?>>Rejected</option>
+                        <option value="completed" <?php echo $filter_status === 'completed' ? 'selected' : ''; ?>>Completed</option>
                     </select>
                 </div>
 
@@ -225,7 +228,54 @@ $stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
                 </div>
             </form>
 
-            <!-- Loans Table -->
+            <!-- Pending applications (FIFO) -->
+            <?php if (!empty($pending_applications)): ?>
+            <h2 style="margin-bottom: 1rem;">Pending applications (FIFO — oldest first)</h2>
+            <div class="card mb-4">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Application ref</th>
+                                <th>Borrower</th>
+                                <th>Product</th>
+                                <th>Amount</th>
+                                <th>Credit</th>
+                                <th>Applied</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($pending_applications as $a): ?>
+                                <tr>
+                                    <td><strong><?php echo htmlspecialchars($a['application_ref']); ?></strong></td>
+                                    <td>
+                                        <div style="font-weight: 600;"><?php echo htmlspecialchars($a['full_name']); ?></div>
+                                        <div class="text-secondary" style="font-size: 0.875rem;"><?php echo htmlspecialchars($a['email']); ?></div>
+                                    </td>
+                                    <td><?php echo htmlspecialchars($a['product_name']); ?></td>
+                                    <td><?php echo format_currency($a['requested_amount_mwk']); ?></td>
+                                    <td><?php echo (int)($a['credit_score'] ?? 0); ?></td>
+                                    <td><?php echo format_date($a['applied_at']); ?></td>
+                                    <td>
+                                        <form method="POST" style="display: inline;">
+                                            <input type="hidden" name="application_id" value="<?php echo $a['id']; ?>">
+                                            <input type="hidden" name="action" value="approve">
+                                            <button type="submit" class="btn btn-sm" style="background: var(--success); color: white;"
+                                                    onclick="return confirm('Process this application (FIFO)?')">Process</button>
+                                        </form>
+                                        <button type="button" onclick="openRejectModal(<?php echo $a['id']; ?>)" class="btn btn-danger btn-sm">Reject</button>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Disbursed loans -->
+            <h2 style="margin-bottom: 1rem;">Disbursed loans</h2>
             <div class="card">
                 <div class="table-wrapper">
                     <table>
@@ -234,9 +284,9 @@ $stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
                                 <th>Loan ID</th>
                                 <th>Borrower</th>
                                 <th>Amount</th>
-                                <th>Credit Score</th>
+                                <th>Credit</th>
                                 <th>Status</th>
-                                <th>Applied</th>
+                                <th>Disbursed</th>
                                 <th>Due Date</th>
                                 <th>Actions</th>
                             </tr>
@@ -244,78 +294,32 @@ $stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
                         <tbody>
                             <?php if (empty($loans)): ?>
                                 <tr>
-                                    <td colspan="8" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
-                                        No loans found
-                                    </td>
+                                    <td colspan="8" style="text-align: center; padding: 3rem; color: var(--text-secondary);">No disbursed loans</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($loans as $l): ?>
                                     <tr>
-                                        <td>
-                                            <strong>#LML-<?php echo str_pad($l['loan_id'], 6, '0', STR_PAD_LEFT); ?></strong>
-                                        </td>
+                                        <td><strong>#LML-<?php echo str_pad($l['loan_id'], 6, '0', STR_PAD_LEFT); ?></strong></td>
                                         <td>
                                             <div style="font-weight: 600;"><?php echo htmlspecialchars($l['full_name']); ?></div>
-                                            <div class="text-secondary" style="font-size: 0.875rem;">
-                                                <?php echo htmlspecialchars($l['email']); ?>
-                                            </div>
+                                            <div class="text-secondary" style="font-size: 0.875rem;"><?php echo htmlspecialchars($l['email']); ?></div>
                                         </td>
                                         <td>
                                             <div style="font-weight: 600;"><?php echo format_currency($l['loan_amount']); ?></div>
-                                            <?php if ($l['remaining_balance'] > 0): ?>
-                                                <div class="text-secondary" style="font-size: 0.875rem;">
-                                                    Balance: <?php echo format_currency($l['remaining_balance']); ?>
-                                                </div>
+                                            <?php if (($l['remaining_balance'] ?? 0) > 0): ?>
+                                                <div class="text-secondary" style="font-size: 0.875rem;">Balance: <?php echo format_currency($l['remaining_balance']); ?></div>
                                             <?php endif; ?>
                                         </td>
+                                        <td><?php echo (int)($l['credit_score'] ?? 0); ?></td>
                                         <td>
-                                            <strong style="color: <?php 
-                                                echo $l['credit_score'] >= 700 ? 'var(--success)' : 
-                                                     ($l['credit_score'] >= 500 ? 'var(--warning)' : 'var(--error)');
-                                            ?>">
-                                                <?php echo $l['credit_score']; ?>
-                                            </strong>
-                                        </td>
-                                        <td>
-                                            <span class="badge badge-<?php 
-                                                echo match($l['status']) {
-                                                    'approved', 'disbursed', 'active' => 'success',
-                                                    'pending' => 'warning',
-                                                    'overdue' => 'danger',
-                                                    'repaid' => 'info',
-                                                    'rejected' => 'secondary',
-                                                    default => 'secondary'
-                                                };
-                                            ?>">
-                                                <?php echo ucfirst($l['status']); ?>
+                                            <span class="badge badge-<?php echo in_array($l['status'], ['active']) ? 'success' : ($l['status'] === 'overdue' ? 'danger' : 'info'); ?>">
+                                                <?php echo $l['status'] === 'completed' ? 'Repaid' : ucfirst($l['status']); ?>
                                             </span>
                                         </td>
                                         <td><?php echo format_date($l['created_at']); ?></td>
+                                        <td><?php echo $l['due_date'] ? format_date($l['due_date']) : '-'; ?></td>
                                         <td>
-                                            <?php echo $l['due_date'] ? format_date($l['due_date']) : '-'; ?>
-                                        </td>
-                                        <td>
-                                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                                                <a href="loan-details.php?id=<?php echo $l['loan_id']; ?>" 
-                                                   class="btn btn-secondary btn-sm">View</a>
-                                                
-                                                <?php if ($l['status'] === 'pending'): ?>
-                                                    <form method="POST" style="display: inline;">
-                                                        <input type="hidden" name="loan_id" value="<?php echo $l['loan_id']; ?>">
-                                                        <input type="hidden" name="action" value="approve">
-                                                        <button type="submit" class="btn btn-sm" 
-                                                                style="background: var(--success); color: white;"
-                                                                onclick="return confirm('Process this loan application?')">
-                                                            Process
-                                                        </button>
-                                                    </form>
-                                                    
-                                                    <button onclick="openRejectModal(<?php echo $l['loan_id']; ?>)" 
-                                                            class="btn btn-danger btn-sm">
-                                                        Reject
-                                                    </button>
-                                                <?php endif; ?>
-                                            </div>
+                                            <a href="../loan-details.php?id=<?php echo $l['loan_id']; ?>" class="btn btn-secondary btn-sm">View</a>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -335,7 +339,7 @@ $stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
             <h3 style="margin-bottom: 1rem;">Reject Loan Application</h3>
             
             <form method="POST">
-                <input type="hidden" name="loan_id" id="rejectLoanId">
+                <input type="hidden" name="application_id" id="rejectApplicationId">
                 <input type="hidden" name="action" value="reject">
                 
                 <div class="form-group">
@@ -353,8 +357,8 @@ $stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
     </div>
 
     <script>
-        function openRejectModal(loanId) {
-            document.getElementById('rejectLoanId').value = loanId;
+        function openRejectModal(applicationId) {
+            document.getElementById('rejectApplicationId').value = applicationId;
             document.getElementById('rejectModal').style.display = 'flex';
         }
 

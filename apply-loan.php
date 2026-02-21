@@ -47,11 +47,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $loan_id = $loan->createLoan($loan_data);
         
         if ($loan_id) {
-            // Process approval automatically
+            // Process approval automatically (FIFO: $loan_id is application_id)
             $application_result = $loan->processLoanApplication($loan_id);
             
             // Log audit
-            log_audit(get_user_id(), 'LOAN_APPLICATION_SUBMITTED', 'loans', $loan_id, null, $loan_data);
+            log_audit(get_user_id(), 'LOAN_APPLICATION_SUBMITTED', 'loan_applications', $loan_id, null, $loan_data);
         } else {
             $errors[] = "Failed to submit loan application. Please try again.";
         }

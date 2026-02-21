@@ -325,7 +325,7 @@ $payments = $payment_stmt->fetchAll(PDO::FETCH_ASSOC);
                                             </span>
                                         </td>
                                         <td>
-                                            <?php echo $item['paid_date'] ? format_date($item['paid_date']) : '-'; ?>
+                                            <?php echo !empty($item['paid_at']) ? format_date($item['paid_at']) : (!empty($item['paid_date']) ? format_date($item['paid_date']) : '-'); ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>

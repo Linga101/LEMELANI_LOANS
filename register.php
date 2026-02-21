@@ -123,8 +123,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $password_hash = password_hash($password, HASH_ALGO);
             
-            $insert_query = "INSERT INTO users (national_id, full_name, email, phone, password_hash, selfie_path, id_document_path, verification_status) 
-                           VALUES (:national_id, :full_name, :email, :phone, :password_hash, :selfie_path, :id_document_path, 'pending')";
+            $insert_query = "INSERT INTO users (national_id, full_name, email, phone, password_hash, profile_photo, is_verified, verification_status) 
+                           VALUES (:national_id, :full_name, :email, :phone, :password_hash, :profile_photo, 0, 'pending')";
             
             $insert_stmt = $db->prepare($insert_query);
             $insert_stmt->execute([
@@ -133,8 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':email' => $email,
                 ':phone' => $phone,
                 ':password_hash' => $password_hash,
-                ':selfie_path' => $selfie_path,
-                ':id_document_path' => $id_document_path
+                ':profile_photo' => $selfie_path
             ]);
             
             $user_id = $db->lastInsertId();

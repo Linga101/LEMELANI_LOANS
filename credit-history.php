@@ -14,7 +14,7 @@ $user_data = $user->getUserById(get_user_id());
 $user_stats = $user->getUserStats(get_user_id());
 
 // Get credit history
-$history_query = "SELECT ch.*, l.loan_amount, l.status as loan_status
+$history_query = "SELECT ch.*, l.principal_mwk AS loan_amount, l.status as loan_status
                   FROM credit_history ch
                   LEFT JOIN loans l ON ch.loan_id = l.loan_id
                   WHERE ch.user_id = :user_id

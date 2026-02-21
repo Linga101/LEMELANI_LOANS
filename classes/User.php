@@ -245,10 +245,10 @@ class User {
     public function getUserStats($user_id) {
         $stats = [];
         
-        // Total loans
+        // Total loans (Malawi: principal_mwk, status completed = repaid)
         $query = "SELECT COUNT(*) as total_loans, 
                          SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_loans,
-                         SUM(CASE WHEN status = 'repaid' THEN 1 ELSE 0 END) as repaid_loans,
+                         SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as repaid_loans,
                          SUM(CASE WHEN status = 'overdue' THEN 1 ELSE 0 END) as overdue_loans
                   FROM loans WHERE user_id = :user_id";
         
@@ -257,8 +257,8 @@ class User {
         $stmt->execute();
         $stats['loans'] = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        // Outstanding balance
-        $query = "SELECT SUM(remaining_balance) as total_outstanding 
+        // Outstanding balance (Malawi: outstanding_balance_mwk)
+        $query = "SELECT SUM(outstanding_balance_mwk) as total_outstanding 
                   FROM loans 
                   WHERE user_id = :user_id AND status IN ('active', 'overdue')";
         
@@ -268,10 +268,10 @@ class User {
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         $stats['outstanding_balance'] = $result['total_outstanding'] ?? 0;
         
-        // Total amount borrowed
-        $query = "SELECT SUM(loan_amount) as total_borrowed 
+        // Total amount borrowed (Malawi: principal_mwk)
+        $query = "SELECT SUM(principal_mwk) as total_borrowed 
                   FROM loans 
-                  WHERE user_id = :user_id AND status != 'rejected'";
+                  WHERE user_id = :user_id";
         
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':user_id', $user_id);
@@ -280,11 +280,10 @@ class User {
         $stats['total_borrowed'] = $result['total_borrowed'] ?? 0;
         
         // Next due payment
-        $query = "SELECT MIN(due_date) as next_due_date, amount_due 
+        $query = "SELECT rs.due_date as next_due_date, rs.amount_due 
                   FROM repayment_schedule rs
                   JOIN loans l ON rs.loan_id = l.loan_id
                   WHERE l.user_id = :user_id AND rs.status IN ('pending', 'overdue')
-                  GROUP BY rs.schedule_id
                   ORDER BY rs.due_date ASC
                   LIMIT 1";
         
@@ -306,8 +305,9 @@ class User {
             return ['eligible' => false, 'reason' => 'User not found'];
         }
         
-        // Check verification status
-        if ($user['verification_status'] !== 'verified') {
+        // Check verification (Malawi: is_verified 0/1; legacy: verification_status)
+        $verified = isset($user['is_verified']) ? (int)$user['is_verified'] : (($user['verification_status'] ?? '') === 'verified' ? 1 : 0);
+        if (!$verified) {
             return ['eligible' => false, 'reason' => 'Account not verified'];
         }
         
@@ -321,7 +321,7 @@ class User {
             return ['eligible' => false, 'reason' => 'Credit score too low'];
         }
         
-        // Check for overdue loans
+        // Check for overdue loans (Malawi schema)
         $query = "SELECT COUNT(*) as overdue_count 
                   FROM loans 
                   WHERE user_id = :user_id AND status = 'overdue'";
@@ -335,10 +335,10 @@ class User {
             return ['eligible' => false, 'reason' => 'You have overdue loans'];
         }
         
-        // Check maximum active loans
+        // Check maximum active loans (Malawi: active only)
         $query = "SELECT COUNT(*) as active_count 
                   FROM loans 
-                  WHERE user_id = :user_id AND status IN ('active', 'disbursed')";
+                  WHERE user_id = :user_id AND status = 'active'";
         
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':user_id', $user_id);

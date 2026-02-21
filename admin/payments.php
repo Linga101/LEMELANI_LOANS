@@ -16,8 +16,10 @@ $search = sanitize_input($_GET['search'] ?? '');
 $date_from = $_GET['date_from'] ?? '';
 $date_to = $_GET['date_to'] ?? '';
 
-// Build query
-$query = "SELECT r.*, u.full_name, u.email, l.loan_amount
+// Build query (Malawi: amount_paid_mwk, paid_at, payment_reference; alias for compat)
+$query = "SELECT r.repayment_id, r.loan_id, r.user_id, r.amount_paid_mwk AS payment_amount, r.payment_method,
+                 r.payment_reference AS transaction_reference, r.paid_at AS payment_date, r.payment_status,
+                 u.full_name, u.email, l.principal_mwk AS loan_amount
           FROM repayments r
           JOIN users u ON r.user_id = u.user_id
           JOIN loans l ON r.loan_id = l.loan_id
@@ -36,34 +38,34 @@ if ($filter_status !== 'all') {
 }
 
 if ($search) {
-    $query .= " AND (u.full_name LIKE :search OR u.email LIKE :search OR r.transaction_reference LIKE :search)";
+    $query .= " AND (u.full_name LIKE :search OR u.email LIKE :search OR r.payment_reference LIKE :search)";
     $params[':search'] = '%' . $search . '%';
 }
 
 if ($date_from) {
-    $query .= " AND DATE(r.payment_date) >= :date_from";
+    $query .= " AND DATE(r.paid_at) >= :date_from";
     $params[':date_from'] = $date_from;
 }
 
 if ($date_to) {
-    $query .= " AND DATE(r.payment_date) <= :date_to";
+    $query .= " AND DATE(r.paid_at) <= :date_to";
     $params[':date_to'] = $date_to;
 }
 
-$query .= " ORDER BY r.payment_date DESC LIMIT 100";
+$query .= " ORDER BY r.paid_at DESC LIMIT 100";
 
 $stmt = $db->prepare($query);
 $stmt->execute($params);
 $payments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Calculate statistics
+// Calculate statistics (Malawi: amount_paid_mwk)
 $stats_query = "SELECT 
                  COUNT(*) as total_transactions,
                  SUM(CASE WHEN payment_status = 'completed' THEN 1 ELSE 0 END) as successful,
                  SUM(CASE WHEN payment_status = 'pending' THEN 1 ELSE 0 END) as pending,
                  SUM(CASE WHEN payment_status = 'failed' THEN 1 ELSE 0 END) as failed,
-                 SUM(CASE WHEN payment_status = 'completed' THEN payment_amount ELSE 0 END) as total_collected,
-                 SUM(payment_amount) as total_amount
+                 COALESCE(SUM(CASE WHEN payment_status = 'completed' THEN amount_paid_mwk ELSE 0 END), 0) as total_collected,
+                 COALESCE(SUM(amount_paid_mwk), 0) as total_amount
                 FROM repayments";
 $stats_stmt = $db->prepare($stats_query);
 $stats_stmt->execute();
@@ -72,7 +74,7 @@ $stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
 // Payment method breakdown
 $method_query = "SELECT payment_method, 
                         COUNT(*) as count,
-                        SUM(CASE WHEN payment_status = 'completed' THEN payment_amount ELSE 0 END) as total
+                        COALESCE(SUM(CASE WHEN payment_status = 'completed' THEN amount_paid_mwk ELSE 0 END), 0) as total
                  FROM repayments
                  WHERE payment_status = 'completed'
                  GROUP BY payment_method";
@@ -80,14 +82,16 @@ $method_stmt = $db->prepare($method_query);
 $method_stmt->execute();
 $payment_methods = $method_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Recent large payments
-$large_payments_query = "SELECT r.*, u.full_name, l.loan_id
+// Recent large payments (Malawi columns with aliases)
+$large_payments_query = "SELECT r.repayment_id, r.loan_id, r.user_id, r.amount_paid_mwk AS payment_amount,
+                                r.payment_reference AS transaction_reference, r.paid_at AS payment_date, r.payment_status,
+                                u.full_name, l.loan_id
                          FROM repayments r
                          JOIN users u ON r.user_id = u.user_id
                          JOIN loans l ON r.loan_id = l.loan_id
                          WHERE r.payment_status = 'completed'
-                         AND r.payment_amount >= 50000
-                         ORDER BY r.payment_date DESC
+                         AND r.amount_paid_mwk >= 50000
+                         ORDER BY r.paid_at DESC
                          LIMIT 5";
 $large_stmt = $db->prepare($large_payments_query);
 $large_stmt->execute();

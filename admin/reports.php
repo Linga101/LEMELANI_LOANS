@@ -11,12 +11,12 @@ $db = $database->getConnection();
 $date_from = $_GET['date_from'] ?? date('Y-m-01'); // First day of current month
 $date_to = $_GET['date_to'] ?? date('Y-m-d'); // Today
 
-// Financial Summary
+// Financial Summary (Malawi: principal_mwk, outstanding_balance_mwk, amount_paid_mwk, paid_at)
 $financial_query = "SELECT 
-                     SUM(CASE WHEN l.status != 'rejected' THEN l.loan_amount ELSE 0 END) as total_disbursed,
-                     SUM(l.remaining_balance) as total_outstanding,
-                     (SELECT SUM(payment_amount) FROM repayments WHERE payment_status = 'completed' 
-                      AND DATE(payment_date) BETWEEN :date_from1 AND :date_to1) as total_collected,
+                     COALESCE(SUM(l.principal_mwk), 0) as total_disbursed,
+                     COALESCE(SUM(CASE WHEN l.status IN ('active','overdue') THEN l.outstanding_balance_mwk ELSE 0 END), 0) as total_outstanding,
+                     (SELECT COALESCE(SUM(amount_paid_mwk), 0) FROM repayments WHERE payment_status = 'completed' 
+                      AND DATE(paid_at) BETWEEN :date_from1 AND :date_to1) as total_collected,
                      COUNT(DISTINCT CASE WHEN l.created_at BETWEEN :date_from2 AND :date_to2 THEN l.user_id END) as active_borrowers
                     FROM loans l
                     WHERE l.created_at BETWEEN :date_from3 AND :date_to3";
@@ -32,14 +32,14 @@ $financial_stmt->execute([
 ]);
 $financial = $financial_stmt->fetch(PDO::FETCH_ASSOC);
 
-// Loan Performance
+// Loan Performance (Malawi: status completed = repaid)
 $performance_query = "SELECT 
                        COUNT(*) as total_loans,
-                       SUM(CASE WHEN status IN ('approved', 'disbursed', 'active', 'repaid') THEN 1 ELSE 0 END) as approved_loans,
-                       SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected_loans,
+                       SUM(CASE WHEN status IN ('active', 'completed') THEN 1 ELSE 0 END) as approved_loans,
+                       0 as rejected_loans,
                        SUM(CASE WHEN status = 'overdue' THEN 1 ELSE 0 END) as overdue_loans,
-                       SUM(CASE WHEN status = 'repaid' THEN 1 ELSE 0 END) as repaid_loans,
-                       AVG(loan_amount) as avg_loan_amount
+                       SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as repaid_loans,
+                       AVG(principal_mwk) as avg_loan_amount
                       FROM loans
                       WHERE created_at BETWEEN :date_from AND :date_to";
 
@@ -47,10 +47,10 @@ $performance_stmt = $db->prepare($performance_query);
 $performance_stmt->execute([':date_from' => $date_from, ':date_to' => $date_to]);
 $performance = $performance_stmt->fetch(PDO::FETCH_ASSOC);
 
-// Daily loan applications
+// Daily disbursed loans
 $daily_query = "SELECT DATE(created_at) as date, 
                        COUNT(*) as applications,
-                       SUM(CASE WHEN status IN ('approved', 'active', 'repaid') THEN 1 ELSE 0 END) as approved
+                       SUM(CASE WHEN status IN ('active', 'completed') THEN 1 ELSE 0 END) as approved
                 FROM loans
                 WHERE created_at BETWEEN :date_from AND :date_to
                 GROUP BY DATE(created_at)
@@ -72,15 +72,14 @@ $user_growth_stmt = $db->prepare($user_growth_query);
 $user_growth_stmt->execute([':date_from' => $date_from, ':date_to' => $date_to]);
 $user_growth = $user_growth_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Top borrowers
+// Top borrowers (Malawi: principal_mwk, status completed)
 $top_borrowers_query = "SELECT u.full_name, u.email, u.credit_score,
                                COUNT(l.loan_id) as loan_count,
-                               SUM(l.loan_amount) as total_borrowed,
-                               SUM(CASE WHEN l.status = 'repaid' THEN 1 ELSE 0 END) as repaid_count
+                               SUM(l.principal_mwk) as total_borrowed,
+                               SUM(CASE WHEN l.status = 'completed' THEN 1 ELSE 0 END) as repaid_count
                         FROM users u
                         JOIN loans l ON u.user_id = l.user_id
                         WHERE l.created_at BETWEEN :date_from AND :date_to
-                        AND l.status != 'rejected'
                         GROUP BY u.user_id
                         ORDER BY total_borrowed DESC
                         LIMIT 10";

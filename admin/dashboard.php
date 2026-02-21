@@ -21,26 +21,27 @@ $user_stmt = $db->prepare($user_query);
 $user_stmt->execute();
 $stats['users'] = $user_stmt->fetch(PDO::FETCH_ASSOC);
 
-// Loan statistics
+// Loan statistics (Malawi: loans = disbursed only; pending from loan_applications)
+$pending_apps = $db->query("SELECT COUNT(*) FROM loan_applications WHERE status IN ('pending','under_review')")->fetchColumn();
 $loan_query = "SELECT 
                 COUNT(*) as total_loans,
-                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_loans,
-                SUM(CASE WHEN status IN ('approved', 'disbursed', 'active') THEN 1 ELSE 0 END) as active_loans,
+                SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_loans,
                 SUM(CASE WHEN status = 'overdue' THEN 1 ELSE 0 END) as overdue_loans,
-                SUM(CASE WHEN status = 'repaid' THEN 1 ELSE 0 END) as repaid_loans,
-                SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected_loans,
-                SUM(loan_amount) as total_disbursed,
-                SUM(remaining_balance) as total_outstanding
+                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as repaid_loans,
+                COALESCE(SUM(principal_mwk), 0) as total_disbursed,
+                COALESCE(SUM(CASE WHEN status IN ('active','overdue') THEN outstanding_balance_mwk ELSE 0 END), 0) as total_outstanding
                FROM loans";
 $loan_stmt = $db->prepare($loan_query);
 $loan_stmt->execute();
 $stats['loans'] = $loan_stmt->fetch(PDO::FETCH_ASSOC);
+$stats['loans']['pending_loans'] = $pending_apps;
+$stats['loans']['rejected_loans'] = (int)$db->query("SELECT COUNT(*) FROM loan_applications WHERE status = 'rejected'")->fetchColumn();
 
-// Payment statistics
+// Payment statistics (Malawi: amount_paid_mwk, paid_at)
 $payment_query = "SELECT 
                    COUNT(*) as total_payments,
-                   SUM(payment_amount) as total_collected,
-                   SUM(CASE WHEN payment_status = 'completed' THEN payment_amount ELSE 0 END) as successful_amount
+                   COALESCE(SUM(amount_paid_mwk), 0) as total_collected,
+                   COALESCE(SUM(CASE WHEN payment_status = 'completed' THEN amount_paid_mwk ELSE 0 END), 0) as successful_amount
                   FROM repayments";
 $payment_stmt = $db->prepare($payment_query);
 $payment_stmt->execute();
@@ -59,8 +60,8 @@ $repayment_rate = $stats['loans']['total_disbursed'] > 0
     ? round((($stats['loans']['total_disbursed'] - $stats['loans']['total_outstanding']) / $stats['loans']['total_disbursed']) * 100, 1) 
     : 0;
 
-// Recent activities
-$activity_query = "SELECT 'loan' as type, l.loan_id as id, l.user_id, u.full_name, l.loan_amount as amount, 
+// Recent activities (disbursed loans)
+$activity_query = "SELECT 'loan' as type, l.loan_id as id, l.user_id, u.full_name, l.principal_mwk as amount, 
                           l.status, l.created_at as activity_date
                    FROM loans l
                    JOIN users u ON l.user_id = u.user_id
@@ -70,12 +71,14 @@ $activity_stmt = $db->prepare($activity_query);
 $activity_stmt->execute();
 $recent_activities = $activity_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Recent payments
-$recent_payments_query = "SELECT r.*, u.full_name, l.loan_id 
+// Recent payments (Malawi: amount_paid_mwk, paid_at)
+$recent_payments_query = "SELECT r.repayment_id, r.loan_id, r.user_id, r.amount_paid_mwk as payment_amount, 
+                                 r.payment_method, r.payment_reference as transaction_reference, r.paid_at as payment_date,
+                                 r.payment_status, u.full_name, l.loan_id 
                           FROM repayments r
                           JOIN users u ON r.user_id = u.user_id
                           JOIN loans l ON r.loan_id = l.loan_id
-                          ORDER BY r.payment_date DESC
+                          ORDER BY r.paid_at DESC
                           LIMIT 10";
 $recent_payments_stmt = $db->prepare($recent_payments_query);
 $recent_payments_stmt->execute();
@@ -91,8 +94,9 @@ $pending_stmt = $db->prepare($pending_verifications_query);
 $pending_stmt->execute();
 $pending_verifications = $pending_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// High risk loans
-$high_risk_query = "SELECT l.*, u.full_name, u.email, u.credit_score
+// High risk loans (Malawi: principal_mwk -> loan_amount alias, outstanding_balance_mwk -> remaining_balance)
+$high_risk_query = "SELECT l.loan_id, l.user_id, l.principal_mwk as loan_amount, l.outstanding_balance_mwk as remaining_balance,
+                           l.due_date, l.status, u.full_name, u.email, u.credit_score
                     FROM loans l
                     JOIN users u ON l.user_id = u.user_id
                     WHERE l.status = 'overdue'
@@ -102,11 +106,11 @@ $high_risk_stmt = $db->prepare($high_risk_query);
 $high_risk_stmt->execute();
 $high_risk_loans = $high_risk_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Daily loan applications (last 7 days)
-$daily_loans_query = "SELECT DATE(created_at) as date, COUNT(*) as count
-                      FROM loans
-                      WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-                      GROUP BY DATE(created_at)
+// Daily loan applications (last 7 days) from loan_applications
+$daily_loans_query = "SELECT DATE(applied_at) as date, COUNT(*) as count
+                      FROM loan_applications
+                      WHERE applied_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+                      GROUP BY DATE(applied_at)
                       ORDER BY date ASC";
 $daily_loans_stmt = $db->prepare($daily_loans_query);
 $daily_loans_stmt->execute();
