@@ -168,7 +168,7 @@ $success_rate = $stats['total_transactions'] > 0
 
                 <div class="stat-card">
                     <div class="stat-label">Total Transactions</div>
-                    <div class="stat-value"><?php echo number_format($stats['total_transactions']); ?></div>
+                    <div class="stat-value"><?php echo number_format($stats['total_transactions'] ?? 0); ?></div>
                 </div>
 
                 <div class="stat-card">

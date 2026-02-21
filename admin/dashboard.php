@@ -359,13 +359,13 @@ $daily_loans = $daily_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="metric-card">
                     <div class="metric-header">
                         <div>
-                            <div class="metric-value"><?php echo number_format($stats['users']['total_users']); ?></div>
+                            <div class="metric-value"><?php echo number_format($stats['users']['total_users'] ?? 0); ?></div>
                             <div class="metric-label">Total Users</div>
                         </div>
                         <div class="metric-icon">👥</div>
                     </div>
                     <div class="metric-change">
-                        <?php echo number_format($stats['users']['verified_users']); ?> verified
+                        <?php echo number_format($stats['users']['verified_users'] ?? 0); ?> verified
                     </div>
                 </div>
 
@@ -378,7 +378,7 @@ $daily_loans = $daily_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
                         <div class="metric-icon">💰</div>
                     </div>
                     <div class="metric-change">
-                        <?php echo number_format($stats['loans']['total_loans']); ?> loans
+                        <?php echo number_format($stats['loans']['total_loans'] ?? 0); ?> loans
                     </div>
                 </div>
 
@@ -391,7 +391,7 @@ $daily_loans = $daily_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
                         <div class="metric-icon">📊</div>
                     </div>
                     <div class="metric-change">
-                        <?php echo number_format($stats['loans']['active_loans']); ?> active loans
+                        <?php echo number_format($stats['loans']['active_loans'] ?? 0); ?> active loans
                     </div>
                 </div>
 
@@ -502,14 +502,25 @@ $daily_loans = $daily_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
                         <div class="chart-container">
                             <div class="chart-bar">
                                 <?php 
-                                $max_count = max(array_column($daily_loans, 'count')) ?: 1;
-                                foreach ($daily_loans as $day): 
-                                    $height = ($day['count'] / $max_count) * 100;
+                                    // Protect against empty data arrays before calling max()
+                                    $counts = is_array($daily_loans) ? array_column($daily_loans, 'count') : [];
+                                    if (!empty($counts)) {
+                                        $max_count = max($counts);
+                                        if ($max_count <= 0) {
+                                            $max_count = 1;
+                                        }
+                                        foreach ($daily_loans as $day): 
+                                            $height = ($day['count'] / $max_count) * 100;
+                                        ?>
+                                            <div class="bar" style="height: <?php echo $height; ?>%;" title="<?php echo $day['count']; ?> applications">
+                                                <span class="bar-label"><?php echo date('M d', strtotime($day['date'])); ?></span>
+                                            </div>
+                                        <?php endforeach; 
+                                    } else {
+                                        // No data to display
+                                        echo '<div style="text-align: center; color: var(--text-secondary); padding: 2rem;">No loan applications in the last 7 days.</div>';
+                                    }
                                 ?>
-                                    <div class="bar" style="height: <?php echo $height; ?>%;" title="<?php echo $day['count']; ?> applications">
-                                        <span class="bar-label"><?php echo date('M d', strtotime($day['date'])); ?></span>
-                                    </div>
-                                <?php endforeach; ?>
                             </div>
                         </div>
                     </div>

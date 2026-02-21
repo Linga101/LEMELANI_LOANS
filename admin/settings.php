@@ -224,12 +224,12 @@ $system_stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
 
                         <div class="stat-card">
                             <div class="stat-label">Total Users</div>
-                            <div class="stat-value"><?php echo number_format($system_stats['total_users']); ?></div>
+                            <div class="stat-value"><?php echo number_format($system_stats['total_users'] ?? 0); ?></div>
                         </div>
 
                         <div class="stat-card">
                             <div class="stat-label">Total Loans</div>
-                            <div class="stat-value"><?php echo number_format($system_stats['total_loans']); ?></div>
+                            <div class="stat-value"><?php echo number_format($system_stats['total_loans'] ?? 0); ?></div>
                         </div>
 
                         <div class="stat-card">

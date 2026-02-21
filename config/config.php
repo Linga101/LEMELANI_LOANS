@@ -121,6 +121,8 @@ function require_role($allowed_roles) {
 }
 
 function format_currency($amount) {
+    // ensure a numeric value is always provided to number_format
+    $amount = $amount !== null ? $amount : 0;
     return 'MK ' . number_format($amount, 2);
 }
 

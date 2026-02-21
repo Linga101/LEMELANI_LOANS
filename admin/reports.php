@@ -311,13 +311,13 @@ $collection_efficiency = $financial['total_disbursed'] > 0
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-label">Total Applications</div>
-                            <div class="stat-value"><?php echo number_format($performance['total_loans']); ?></div>
+                            <div class="stat-value"><?php echo number_format($performance['total_loans'] ?? 0); ?></div>
                         </div>
 
                         <div class="stat-card">
                             <div class="stat-label">Approved Loans</div>
                             <div class="stat-value" style="color: var(--success);">
-                                <?php echo number_format($performance['approved_loans']); ?>
+                                <?php echo number_format($performance['approved_loans'] ?? 0); ?>
                             </div>
                             <div class="text-secondary" style="font-size: 0.875rem;">
                                 <?php echo $approval_rate; ?>% approval rate
@@ -327,14 +327,14 @@ $collection_efficiency = $financial['total_disbursed'] > 0
                         <div class="stat-card">
                             <div class="stat-label">Rejected Loans</div>
                             <div class="stat-value" style="color: var(--error);">
-                                <?php echo number_format($performance['rejected_loans']); ?>
+                                <?php echo number_format($performance['rejected_loans'] ?? 0); ?>
                             </div>
                         </div>
 
                         <div class="stat-card">
                             <div class="stat-label">Overdue Loans</div>
                             <div class="stat-value" style="color: var(--error);">
-                                <?php echo number_format($performance['overdue_loans']); ?>
+                                <?php echo number_format($performance['overdue_loans'] ?? 0); ?>
                             </div>
                             <div class="text-secondary" style="font-size: 0.875rem;">
                                 <?php echo $default_rate; ?>% default rate
@@ -344,7 +344,7 @@ $collection_efficiency = $financial['total_disbursed'] > 0
                         <div class="stat-card">
                             <div class="stat-label">Repaid Loans</div>
                             <div class="stat-value" style="color: var(--info);">
-                                <?php echo number_format($performance['repaid_loans']); ?>
+                                <?php echo number_format($performance['repaid_loans'] ?? 0); ?>
                             </div>
                         </div>
 
