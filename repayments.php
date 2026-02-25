@@ -236,7 +236,10 @@ $overdue_loans = $payment->getOverdueLoans(get_user_id());
     <div class="gradient-overlay"></div>
 
     <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
+        <button id="sidebarToggle" class="sidebar-toggle">
+            <i class="fas fa-chevron-left"></i>
+        </button>
         <div class="sidebar-brand">
             <img src="assets/images/logo.png" alt="<?php echo SITE_NAME; ?>" onerror="this.style.display='none'">
             <span><?php echo SITE_NAME; ?></span>
@@ -244,28 +247,28 @@ $overdue_loans = $payment->getOverdueLoans(get_user_id());
 
         <ul class="sidebar-menu">
             <li><a href="<?php echo site_url('dashboard.php'); ?>">
-                <i class="fas fa-home"></i> Dashboard
+                <i class="fas fa-home"></i> <span class="link-text">Dashboard</span>
             </a></li>
             <li><a href="<?php echo site_url('loans.php'); ?>">
-                <i class="fas fa-wallet"></i> My Loans
+                <i class="fas fa-wallet"></i> <span class="link-text">My Loans</span>
             </a></li>
             <li><a href="<?php echo site_url('apply-loan.php'); ?>">
-                <i class="fas fa-plus-circle"></i> Apply for Loan
+                <i class="fas fa-plus-circle"></i> <span class="link-text">Apply for Loan</span>
             </a></li>
             <li><a href="<?php echo site_url('repayments.php'); ?>" class="active">
-                <i class="fas fa-credit-card"></i> Repayments
+                <i class="fas fa-credit-card"></i> <span class="link-text">Repayments</span>
             </a></li>
             <li><a href="<?php echo site_url('credit-history.php'); ?>">
-                <i class="fas fa-chart-line"></i> Credit History
+                <i class="fas fa-chart-line"></i> <span class="link-text">Credit History</span>
             </a></li>
             <li><a href="<?php echo site_url('notifications.php'); ?>">
-                <i class="fas fa-bell"></i> Notifications
+                <i class="fas fa-bell"></i> <span class="link-text">Notifications</span>
             </a></li>
             <li><a href="<?php echo site_url('profile.php'); ?>">
-                <i class="fas fa-user"></i> Profile
+                <i class="fas fa-user"></i> <span class="link-text">Profile</span>
             </a></li>
             <li><a href="<?php echo site_url('logout.php'); ?>">
-                <i class="fas fa-sign-out-alt"></i> Logout
+                <i class="fas fa-sign-out-alt"></i> <span class="link-text">Logout</span>
             </a></li>
         </ul>
     </aside>
@@ -639,5 +642,6 @@ $overdue_loans = $payment->getOverdueLoans(get_user_id());
             }
         });
     </script>
+    <script src="assets/js/sidebar.js"></script>
 </body>
 </html>

@@ -277,6 +277,68 @@ select.form-control {
     padding: 2rem 1rem;
     overflow-y: auto;
     z-index: 999;
+    transition: width 0.3s ease;
+}
+
+/* collapsed state */
+.sidebar.collapsed {
+    width: 80px;
+}
+
+.sidebar.collapsed .sidebar-brand span {
+    display: none;
+}
+
+.sidebar.collapsed .sidebar-menu a {
+    justify-content: center;
+    /* hide any remaining text nodes */
+    text-indent: -9999px;
+    white-space: nowrap;
+    position: relative;
+}
+
+.sidebar.collapsed .sidebar-menu a i {
+    margin-right: 0;
+    /* bring icon back into view */
+    text-indent: 0;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.sidebar.collapsed .sidebar-menu .link-text {
+    display: none;
+}
+
+/* toggle button inside sidebar */
+.sidebar-toggle {
+    position: absolute;
+    top: 1rem;
+    right: -15px;
+    background: var(--dark-card);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.3s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    z-index: 1000;
+}
+
+.sidebar-toggle:hover {
+    background: var(--dark-card-hover);
+    color: var(--primary-green);
+    transform: scale(1.1);
+}
+
+.sidebar.collapsed .sidebar-toggle i {
+    transform: rotate(180deg);
 }
 
 .sidebar-brand {
@@ -324,6 +386,11 @@ select.form-control {
 .main-wrapper {
     margin-left: 260px;
     min-height: 100vh;
+}
+
+/* when sidebar is collapsed */
+.main-wrapper.collapsed {
+    margin-left: 80px;
 }
 
 .main-content {

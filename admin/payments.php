@@ -147,7 +147,7 @@ $success_rate = $stats['total_transactions'] > 0
                 <a href="<?php echo site_url('dashboard.php'); ?>">
                     <i class="fas fa-user"></i> User View
                 </a></li>
-            <li><a href="<?php echo site_url('logout.php'); ?>">
+            <li><a href="../logout.php">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </a></li>
         </ul>
@@ -409,5 +409,6 @@ $success_rate = $stats['total_transactions'] > 0
             </div>
         </div>
     </div>
+    <script src="../assets/js/sidebar.js"></script>
 </body>
 </html>

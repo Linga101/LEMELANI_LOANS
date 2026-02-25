@@ -255,7 +255,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="gradient-overlay"></div>
 
     <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
+        <button id="sidebarToggle" class="sidebar-toggle">
+            <i class="fas fa-chevron-left"></i>
+        </button>
         <div class="sidebar-brand">
             <img src="assets/images/logo.png" alt="<?php echo SITE_NAME; ?>" onerror="this.style.display='none'">
             <span><?php echo SITE_NAME; ?></span>
@@ -617,5 +620,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         });
     </script>
+    <script src="assets/js/sidebar.js"></script>
 </body>
 </html>

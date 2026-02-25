@@ -183,7 +183,10 @@ $collection_efficiency = $financial['total_disbursed'] > 0
     <div class="gradient-overlay"></div>
 
     <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
+        <button id="sidebarToggle" class="sidebar-toggle">
+            <i class="fas fa-chevron-left"></i>
+        </button>
         <div class="sidebar-brand">
             <img src="../assets/images/logo.png" alt="<?php echo SITE_NAME; ?>" onerror="this.style.display='none'">
             <span><?php echo SITE_NAME; ?></span>
@@ -216,7 +219,7 @@ $collection_efficiency = $financial['total_disbursed'] > 0
                     <i class="fas fa-user"></i> User View
                 </a>
             </li>
-            <li><a href="<?php echo site_url('logout.php'); ?>">
+            <li><a href="../logout.php">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </a></li>
         </ul>
@@ -492,5 +495,6 @@ $collection_efficiency = $financial['total_disbursed'] > 0
             // window.location.href = 'export-csv.php?date_from=<?php echo $date_from; ?>&date_to=<?php echo $date_to; ?>';
         }
     </script>
+    <script src="../assets/js/sidebar.js"></script>
 </body>
 </html>

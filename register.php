@@ -278,7 +278,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 8px;
         }
 
-        .capture-btn {
+        .capture-btn,
+        .start-camera-btn,
+        .retake-btn {
             margin-top: 0.5rem;
         }
         
@@ -419,25 +421,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="form-group">
                         <label class="form-label">Capture National ID Document *</label>
                         <div class="camera-container">
-                            <video id="idVideo" class="camera-preview" autoplay playsinline></video>
+                            <video id="idVideo" class="camera-preview hidden" autoplay playsinline></video>
                             <canvas id="idCanvas" class="hidden"></canvas>
                         </div>
-                        <button type="button" class="btn capture-btn" id="captureIdBtn">Capture ID</button>
+                        <button type="button" class="btn start-camera-btn" id="startIdBtn">Start Camera</button>
+                        <button type="button" class="btn capture-btn hidden" id="captureIdBtn">Capture ID</button>
+                        <button type="button" class="btn retake-btn hidden" id="retakeIdBtn">Retake</button>
                         <input type="hidden" name="id_document_data" id="id_document_data">
                         <img id="idPreview" class="camera-preview hidden" alt="ID snapshot">
-                        <p><small>Or upload file: <input type="file" name="id_document" accept="image/*,.pdf"></small></p>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Capture Selfie *</label>
                         <div class="camera-container">
-                            <video id="selfieVideo" class="camera-preview" autoplay playsinline></video>
+                            <video id="selfieVideo" class="camera-preview hidden" autoplay playsinline></video>
                             <canvas id="selfieCanvas" class="hidden"></canvas>
                         </div>
-                        <button type="button" class="btn capture-btn" id="captureSelfieBtn">Capture Selfie</button>
+                        <button type="button" class="btn start-camera-btn" id="startSelfieBtn">Start Camera</button>
+                        <button type="button" class="btn capture-btn hidden" id="captureSelfieBtn">Capture Selfie</button>
+                        <button type="button" class="btn retake-btn hidden" id="retakeSelfieBtn">Retake</button>
                         <input type="hidden" name="selfie_data" id="selfie_data">
                         <img id="selfiePreview" class="camera-preview hidden" alt="Selfie snapshot">
-                        <p><small>Or upload file: <input type="file" name="selfie" accept="image/*"></small></p>
                     </div>
                 </div>
 
@@ -501,17 +505,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             if (currentStep === 2) {
-                // require at least one of the camera captures or file inputs
+                // require both selfie and ID to have been captured via camera
                 const selfieData = document.getElementById('selfie_data').value;
                 const idData = document.getElementById('id_document_data').value;
-                const fileSelfie = document.querySelector('input[name="selfie"]').files[0];
-                const fileId = document.querySelector('input[name="id_document"]').files[0];
-                if (!selfieData && !fileSelfie) {
-                    alert('Please capture or upload a selfie');
+                if (!selfieData) {
+                    alert('Please capture a selfie using the camera');
                     return;
                 }
-                if (!idData && !fileId) {
-                    alert('Please capture or upload your ID document');
+                if (!idData) {
+                    alert('Please capture your national ID using the camera');
                     return;
                 }
             }
@@ -527,40 +529,93 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         });
 
-        // camera initialization
-        async function initCamera() {
+        // camera control helpers
+        let streams = {
+            id: null,
+            selfie: null
+        };
+
+        async function startCamera(type) {
+            const videoId = type + 'Video';
+            const startBtn = document.getElementById('start' + capitalize(type) + 'Btn');
+            const captureBtn = document.getElementById('capture' + capitalize(type) + 'Btn');
+            const retakeBtn = document.getElementById('retake' + capitalize(type) + 'Btn');
+            const videoElem = document.getElementById(videoId);
+
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                document.getElementById('selfieVideo').srcObject = stream;
-                document.getElementById('idVideo').srcObject = stream;
+                streams[type] = stream;
+                videoElem.srcObject = stream;
+                videoElem.classList.remove('hidden');
+                startBtn.classList.add('hidden');
+                captureBtn.classList.remove('hidden');
+                retakeBtn.classList.add('hidden');
             } catch (e) {
                 console.warn('Camera not available', e);
             }
         }
 
-        function capture(videoElem, canvasElem, hiddenInput) {
-            const video = document.getElementById(videoElem);
-            const canvas = document.getElementById(canvasElem);
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0);
+        function capture(type) {
+            const videoElem = document.getElementById(type + 'Video');
+            const canvas = document.getElementById(type + 'Canvas');
+            // special case for id document input name
+            const hiddenId = (type === 'id') ? 'id_document_data' : (type + '_data');
+            const hiddenInput = document.getElementById(hiddenId);
+            const preview = document.getElementById(type + 'Preview');
+            const captureBtn = document.getElementById('capture' + capitalize(type) + 'Btn');
+            const retakeBtn = document.getElementById('retake' + capitalize(type) + 'Btn');
+
+            canvas.width = videoElem.videoWidth;
+            canvas.height = videoElem.videoHeight;
+            canvas.getContext('2d').drawImage(videoElem, 0, 0);
             const dataUrl = canvas.toDataURL('image/png');
-            document.getElementById(hiddenInput).value = dataUrl;
-            // show preview if available
-            const previewId = videoElem.replace('Video','Preview');
-            const img = document.getElementById(previewId);
-            if (img) {
-                img.src = dataUrl;
-                img.classList.remove('hidden');
+            hiddenInput.value = dataUrl;
+
+            // show preview and update buttons
+            preview.src = dataUrl;
+            preview.classList.remove('hidden');
+            videoElem.classList.add('hidden');
+            captureBtn.classList.add('hidden');
+            retakeBtn.classList.remove('hidden');
+
+            // stop stream to release camera
+            if (streams[type]) {
+                streams[type].getTracks().forEach(t => t.stop());
+                streams[type] = null;
             }
         }
 
-        document.getElementById('captureSelfieBtn').addEventListener('click', () => {
-            capture('selfieVideo', 'selfieCanvas', 'selfie_data');
-        });
-        document.getElementById('captureIdBtn').addEventListener('click', () => {
-            capture('idVideo', 'idCanvas', 'id_document_data');
-        });
+        function retake(type) {
+            const preview = document.getElementById(type + 'Preview');
+            const hiddenId = (type === 'id') ? 'id_document_data' : (type + '_data');
+            const hiddenInput = document.getElementById(hiddenId);
+            const startBtn = document.getElementById('start' + capitalize(type) + 'Btn');
+            const captureBtn = document.getElementById('capture' + capitalize(type) + 'Btn');
+            const retakeBtn = document.getElementById('retake' + capitalize(type) + 'Btn');
+            const videoElem = document.getElementById(type + 'Video');
+
+            // clear previous data
+            preview.src = '';
+            preview.classList.add('hidden');
+            hiddenInput.value = '';
+
+            // reset UI to allow starting camera again
+            startBtn.classList.remove('hidden');
+            captureBtn.classList.add('hidden');
+            retakeBtn.classList.add('hidden');
+            videoElem.classList.add('hidden');
+        }
+
+        function capitalize(s) {
+            return s.charAt(0).toUpperCase() + s.slice(1);
+        }
+
+        document.getElementById('startSelfieBtn').addEventListener('click', () => startCamera('selfie'));
+        document.getElementById('startIdBtn').addEventListener('click', () => startCamera('id'));
+        document.getElementById('captureSelfieBtn').addEventListener('click', () => capture('selfie'));
+        document.getElementById('captureIdBtn').addEventListener('click', () => capture('id'));
+        document.getElementById('retakeSelfieBtn').addEventListener('click', () => retake('selfie'));
+        document.getElementById('retakeIdBtn').addEventListener('click', () => retake('id'));
 
         // password confirmation validation
         document.getElementById('confirm_password').addEventListener('input', function() {
@@ -574,7 +629,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
 
         showStep(currentStep);
-        initCamera();
+        // camera will start only when user clicks the respective "Start Camera" buttons
+        // initCamera();
+
     </script>
 </body>
 </html>
