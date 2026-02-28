@@ -92,6 +92,33 @@ if (APP_ENV === 'production') {
 }
 ini_set('log_errors', '1');
 
+set_exception_handler(function (Throwable $e) {
+    error_log('Unhandled exception: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    if (!headers_sent()) {
+        http_response_code(500);
+    }
+    if (APP_ENV === 'production') {
+        echo 'An unexpected error occurred. Please try again later.';
+    } else {
+        echo 'Application error. Check server logs for details.';
+    }
+});
+
+register_shutdown_function(function () {
+    $error = error_get_last();
+    if (!$error) {
+        return;
+    }
+    $fatalTypes = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
+    if (!in_array($error['type'], $fatalTypes, true)) {
+        return;
+    }
+    error_log('Fatal error: ' . $error['message'] . ' in ' . $error['file'] . ':' . $error['line']);
+    if (!headers_sent()) {
+        http_response_code(500);
+    }
+});
+
 // Include database configuration
 require_once ROOT_PATH . '/config/database.php';
 
