@@ -77,6 +77,7 @@ define('MIN_LOAN_AMOUNT', 10000);
 define('MAX_LOAN_AMOUNT', 300000);
 define('DEFAULT_INTEREST_RATE', 5.00);
 define('DEFAULT_LOAN_TERM', 30);
+define('DEFAULT_LOAN_TERM_MONTHS', 3);
 
 // Timezone
 date_default_timezone_set('Africa/Blantyre');

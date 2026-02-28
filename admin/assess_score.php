@@ -40,15 +40,14 @@ foreach ($result['breakdown'] as $k => $v) {
 echo "</ul>";
 
 echo "<h3>Suggested Tips</h3>";
-if (method_exists($engine, 'generateTips')) {
-    $tips = $engine->generateTips([], $result['breakdown']['payment_history']['score'], $result['breakdown']['credit_utilization']['score'], $result['breakdown']['income_stability']['score'], $result['breakdown']['alternative_data']['score']);
-    if (!empty($tips)) {
-        echo "<ul>";
-        foreach ($tips as $t) echo "<li>" . htmlspecialchars($t) . "</li>";
-        echo "</ul>";
-    } else {
-        echo "<p>No tips available.</p>";
+if (!empty($result['tips'])) {
+    echo "<ul>";
+    foreach ($result['tips'] as $t) {
+        echo "<li>" . htmlspecialchars($t) . "</li>";
     }
+    echo "</ul>";
+} else {
+    echo "<p>No tips available.</p>";
 }
 
 echo "<p><a href=\"" . site_url('admin/dashboard.php') . "\">Back to dashboard</a></p>";

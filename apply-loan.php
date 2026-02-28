@@ -95,6 +95,7 @@ foreach ($settings_result as $setting) {
             background: var(--border-color);
             border-radius: 4px;
             outline: none;
+            appearance: none;
             -webkit-appearance: none;
         }
 
