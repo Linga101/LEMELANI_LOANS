@@ -10,9 +10,12 @@ $errors = [];
 $email = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_or_fail();
     $email = sanitize_input($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     $remember_me = isset($_POST['remember_me']);
+    $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $attemptKey = 'login_attempt_' . hash('sha256', strtolower($email) . '|' . $ip_address);
     
     // Validation
     if (empty($email)) {
@@ -29,17 +32,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $database = new Database();
             $db = $database->getConnection();
             
-            // Check for login attempts (basic rate limiting)
-            $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+            // Check login attempts (session-backed lockout window)
+            $attempts = $_SESSION[$attemptKey]['count'] ?? 0;
+            $firstAttempt = $_SESSION[$attemptKey]['first'] ?? time();
+            if ($attempts >= MAX_LOGIN_ATTEMPTS && (time() - $firstAttempt) < LOGIN_TIMEOUT) {
+                $wait = LOGIN_TIMEOUT - (time() - $firstAttempt);
+                $errors[] = "Too many login attempts. Please try again in " . ceil($wait / 60) . " minute(s).";
+            }
             
             $query = "SELECT user_id, full_name, email, password_hash, role, account_status, verification_status 
                      FROM users 
                      WHERE email = :email";
             
-            $stmt = $db->prepare($query);
-            $stmt->execute([':email' => $email]);
+            if (empty($errors)) {
+                $stmt = $db->prepare($query);
+                $stmt->execute([':email' => $email]);
+            }
             
-            if ($stmt->rowCount() === 1) {
+            if (empty($errors) && $stmt->rowCount() === 1) {
                 $user = $stmt->fetch();
                 
                 // Check if account is suspended
@@ -57,6 +67,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['email'] = $user['email'];
                     $_SESSION['verification_status'] = $user['verification_status'];
                     $_SESSION['login_time'] = time();
+                    $_SESSION['last_activity'] = time();
+                    unset($_SESSION[$attemptKey]);
                     
                     // Update last login
                     $update_query = "UPDATE users SET last_login = NOW() WHERE user_id = :user_id";
@@ -68,9 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     // Remember me functionality
                     if ($remember_me) {
-                        $token = bin2hex(random_bytes(32));
-                        setcookie('remember_token', $token, time() + (86400 * 30), '/'); // 30 days
-                        // In production, store this token in database
+                        issue_remember_me_token((int)$user['user_id']);
                     }
                     
                     // Redirect based on role
@@ -82,16 +92,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                 } else {
                     $errors[] = "Invalid email or password";
+                    if (!isset($_SESSION[$attemptKey]) || (time() - ($_SESSION[$attemptKey]['first'] ?? 0)) > LOGIN_TIMEOUT) {
+                        $_SESSION[$attemptKey] = ['count' => 1, 'first' => time()];
+                    } else {
+                        $_SESSION[$attemptKey]['count'] = ($_SESSION[$attemptKey]['count'] ?? 0) + 1;
+                    }
                     
                     // Log failed attempt
                     log_audit(null, 'FAILED_LOGIN_ATTEMPT', 'users', null, null, ['email' => $email]);
                 }
             } else {
                 $errors[] = "Invalid email or password";
+                if (!isset($_SESSION[$attemptKey]) || (time() - ($_SESSION[$attemptKey]['first'] ?? 0)) > LOGIN_TIMEOUT) {
+                    $_SESSION[$attemptKey] = ['count' => 1, 'first' => time()];
+                } else {
+                    $_SESSION[$attemptKey]['count'] = ($_SESSION[$attemptKey]['count'] ?? 0) + 1;
+                }
             }
             
-        } catch(PDOException $e) {
-            $errors[] = "Login error: " . $e->getMessage();
+        } catch(Exception $e) {
+            error_log('Login error: ' . $e->getMessage());
+            $errors[] = "Unable to sign in right now. Please try again.";
         }
     }
 }
@@ -225,6 +246,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <form method="POST">
+                <?php echo csrf_input(); ?>
                 <div class="form-group">
                     <label for="email" class="form-label">Email Address</label>
                     <input type="email" id="email" name="email" class="form-control" 

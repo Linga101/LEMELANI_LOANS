@@ -32,6 +32,7 @@ $active_loans = $active_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Handle payment submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_or_fail();
     $loan_id = intval($_POST['loan_id'] ?? 0);
     $payment_amount = floatval($_POST['payment_amount'] ?? 0);
     $payment_method = $_POST['payment_method'] ?? '';
@@ -308,6 +309,7 @@ $overdue_loans = $payment->getOverdueLoans(get_user_id());
                 </div>
             <?php else: ?>
                 <form method="POST" id="paymentForm">
+                    <?php echo csrf_input(); ?>
                     <div class="payment-section">
                         <!-- Left: Loan Selection -->
                         <div>
@@ -323,7 +325,7 @@ $overdue_loans = $payment->getOverdueLoans(get_user_id());
                                     $is_selected = $loan['loan_id'] == $selected_loan_id;
                                     ?>
                                     <div class="loan-select-card <?php echo $is_selected ? 'selected' : ''; ?>" 
-                                         onclick="selectLoan(<?php echo $loan['loan_id']; ?>, <?php echo $loan['remaining_balance']; ?>, <?php echo $penalty; ?>)">
+                                         onclick="selectLoan(event, <?php echo $loan['loan_id']; ?>, <?php echo $loan['remaining_balance']; ?>, <?php echo $penalty; ?>)">
                                         <div class="flex-between mb-2">
                                             <strong>Loan #LML-<?php echo str_pad($loan['loan_id'], 6, '0', STR_PAD_LEFT); ?></strong>
                                             <span class="badge badge-<?php echo $is_overdue ? 'danger' : 'warning'; ?>">
@@ -383,32 +385,32 @@ $overdue_loans = $payment->getOverdueLoans(get_user_id());
                                 <div class="form-group">
                                     <label class="form-label">Payment Method *</label>
                                     <div class="payment-methods">
-                                        <div class="payment-method-card" onclick="selectPaymentMethod('airtel_money')">
+                                        <div class="payment-method-card" onclick="selectPaymentMethod(event, 'airtel_money')">
                                             <div class="payment-method-icon"><i class="fas fa-mobile-alt"></i></div>
                                             <div class="payment-method-name">Airtel Money</div>
                                         </div>
 
-                                        <div class="payment-method-card" onclick="selectPaymentMethod('tnm_mpamba')">
+                                        <div class="payment-method-card" onclick="selectPaymentMethod(event, 'tnm_mpamba')">
                                             <div class="payment-method-icon"><i class="fas fa-wallet"></i></div>
                                             <div class="payment-method-name">TNM Mpamba</div>
                                         </div>
 
-                                        <div class="payment-method-card" onclick="selectPaymentMethod('sticpay')">
+                                        <div class="payment-method-card" onclick="selectPaymentMethod(event, 'sticpay')">
                                             <div class="payment-method-icon"><i class="fas fa-credit-card"></i></div>
                                             <div class="payment-method-name">Sticpay</div>
                                         </div>
 
-                                        <div class="payment-method-card" onclick="selectPaymentMethod('mastercard')">
+                                        <div class="payment-method-card" onclick="selectPaymentMethod(event, 'mastercard')">
                                             <div class="payment-method-icon"><i class="fas fa-credit-card"></i></div>
                                             <div class="payment-method-name">Mastercard</div>
                                         </div>
 
-                                        <div class="payment-method-card" onclick="selectPaymentMethod('visa')">
+                                        <div class="payment-method-card" onclick="selectPaymentMethod(event, 'visa')">
                                             <div class="payment-method-icon"><i class="fas fa-credit-card"></i></div>
                                             <div class="payment-method-name">Visa</div>
                                         </div>
 
-                                        <div class="payment-method-card" onclick="selectPaymentMethod('binance')">
+                                        <div class="payment-method-card" onclick="selectPaymentMethod(event, 'binance')">
                                             <div class="payment-method-icon"><i class="fab fa-bitcoin"></i></div>
                                             <div class="payment-method-name">Binance</div>
                                         </div>
@@ -546,7 +548,7 @@ $overdue_loans = $payment->getOverdueLoans(get_user_id());
         let selectedLoanBalance = 0;
         let selectedPenalty = 0;
 
-        function selectLoan(loanId, balance, penalty) {
+        function selectLoan(event, loanId, balance, penalty) {
             // Update hidden input
             document.getElementById('selectedLoanId').value = loanId;
             
@@ -568,7 +570,7 @@ $overdue_loans = $payment->getOverdueLoans(get_user_id());
             updateSummary();
         }
 
-        function selectPaymentMethod(method) {
+        function selectPaymentMethod(event, method) {
             // Update hidden input
             document.getElementById('selectedPaymentMethod').value = method;
             

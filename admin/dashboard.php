@@ -582,7 +582,7 @@ $daily_loans = $daily_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
                                         'approved' => '<i class="fas fa-check-circle" style="color: var(--success);"></i>',
                                         'rejected' => '<i class="fas fa-times-circle" style="color: var(--error);"></i>',
                                         'active' => '<i class="fas fa-wallet"></i>',
-                                        'repaid' => '<i class="fas fa-check" style="color: var(--success);"></i>',
+                                        'completed' => '<i class="fas fa-check" style="color: var(--success);"></i>',
                                         'overdue' => '<i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i>',
                                         default => '<i class="fas fa-file-alt"></i>'
                                     };
@@ -599,11 +599,11 @@ $daily_loans = $daily_loans_stmt->fetchAll(PDO::FETCH_ASSOC);
                                                 'approved', 'active' => 'success',
                                                 'pending' => 'warning',
                                                 'rejected' => 'danger',
-                                                'repaid' => 'info',
+                                                'completed' => 'info',
                                                 default => 'secondary'
                                             };
                                         ?>" style="margin-left: 0.5rem; font-size: 0.7rem;">
-                                            <?php echo ucfirst($activity['status']); ?>
+                                            <?php echo $activity['status'] === 'completed' ? 'Repaid' : ucfirst($activity['status']); ?>
                                         </span>
                                     </div>
                                 </div>

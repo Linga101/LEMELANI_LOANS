@@ -19,6 +19,7 @@ $date_to = $_GET['date_to'] ?? '';
 // Build query (Malawi: amount_paid_mwk, paid_at, payment_reference; alias for compat)
 $query = "SELECT r.repayment_id, r.loan_id, r.user_id, r.amount_paid_mwk AS payment_amount, r.payment_method,
                  r.payment_reference AS transaction_reference, r.paid_at AS payment_date, r.payment_status,
+                 r.is_partial,
                  u.full_name, u.email, l.principal_mwk AS loan_amount
           FROM repayments r
           JOIN users u ON r.user_id = u.user_id
@@ -356,7 +357,7 @@ $success_rate = $stats['total_transactions'] > 0
                                             </div>
                                         </td>
                                         <td>
-                                            <a href="loan-details.php?id=<?php echo $p['loan_id']; ?>" 
+                                            <a href="../loan-details.php?id=<?php echo $p['loan_id']; ?>" 
                                                style="color: var(--primary-green); text-decoration: none;">
                                                 #LML-<?php echo str_pad($p['loan_id'], 6, '0', STR_PAD_LEFT); ?>
                                             </a>

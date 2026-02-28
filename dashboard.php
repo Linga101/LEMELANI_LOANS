@@ -13,8 +13,13 @@ $user = new User($db);
 $user_data = $user->getUserById(get_user_id());
 $user_stats = $user->getUserStats(get_user_id());
 
-// Get recent loans
-$loan_query = "SELECT * FROM loans WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 5";
+// Get recent loans (explicit contract with UI aliases)
+$loan_query = "SELECT loan_id, user_id, principal_mwk AS loan_amount, total_repayable_mwk AS total_amount,
+                      outstanding_balance_mwk AS remaining_balance, due_date, status, created_at
+               FROM loans
+               WHERE user_id = :user_id
+               ORDER BY created_at DESC
+               LIMIT 5";
 $loan_stmt = $db->prepare($loan_query);
 $loan_stmt->execute([':user_id' => get_user_id()]);
 $recent_loans = $loan_stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -219,11 +224,11 @@ $notifications = $notif_stmt->fetchAll(PDO::FETCH_ASSOC);
                                                     'approved', 'disbursed', 'active' => 'success',
                                                     'pending' => 'warning',
                                                     'overdue' => 'danger',
-                                                    'repaid' => 'info',
+                                                    'completed' => 'info',
                                                     default => 'secondary'
                                                 };
                                             ?>">
-                                                <?php echo ucfirst($loan['status']); ?>
+                                                <?php echo $loan['status'] === 'completed' ? 'Repaid' : ucfirst($loan['status']); ?>
                                             </span>
                                         </td>
                                         <td><?php echo $loan['due_date'] ? format_date($loan['due_date']) : 'N/A'; ?></td>

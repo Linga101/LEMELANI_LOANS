@@ -8,7 +8,7 @@ $userId = $_GET['user_id'] ?? null;
 if (!$userId) {
     // simple form to trigger an assessment
     echo "<h2>Assess User Credit Score</h2>";
-    echo "<form method=GET>");
+    echo "<form method=GET>";
     echo "User ID: <input type=text name=user_id /> ";
     echo "<button type=submit>Assess</button>";
     echo "</form>";

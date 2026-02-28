@@ -4,10 +4,10 @@
  */
 
 // Database credentials
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'lemelani_loans');
-define('DB_USER', 'root'); // Change in production
-define('DB_PASS', ''); // Change in production
+define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+define('DB_NAME', getenv('DB_NAME') ?: 'lemelani_loans');
+define('DB_USER', getenv('DB_USER') !== false ? getenv('DB_USER') : '');
+define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : '');
 define('DB_CHARSET', 'utf8mb4');
 
 // Create database connection class
@@ -24,6 +24,9 @@ class Database {
         $this->conn = null;
 
         try {
+            if ($this->username === '') {
+                throw new RuntimeException('Database username is not configured. Set DB_USER in the environment.');
+            }
             $dsn = "mysql:host=" . $this->host . ";dbname=" . $this->db_name . ";charset=" . $this->charset;
             $options = [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -32,8 +35,8 @@ class Database {
             ];
             
             $this->conn = new PDO($dsn, $this->username, $this->password, $options);
-        } catch(PDOException $e) {
-            echo "Connection Error: " . $e->getMessage();
+        } catch(Exception $e) {
+            error_log("Database connection error: " . $e->getMessage());
         }
 
         return $this->conn;

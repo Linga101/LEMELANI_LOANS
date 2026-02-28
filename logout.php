@@ -15,9 +15,7 @@ if (isset($_COOKIE[session_name()])) {
 }
 
 // Delete remember me cookie
-if (isset($_COOKIE['remember_token'])) {
-    setcookie('remember_token', '', time() - 3600, '/');
-}
+clear_remember_me_token();
 
 // Destroy the session
 session_destroy();
