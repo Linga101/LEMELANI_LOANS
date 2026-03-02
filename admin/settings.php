@@ -12,11 +12,12 @@ $errors = [];
 
 // Handle settings update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_or_fail();
     $settings_to_update = [
         'min_loan_amount',
         'max_loan_amount',
         'default_interest_rate',
-        'default_loan_term',
+        'default_loan_term_days',
         'late_payment_penalty_rate',
         'min_credit_score',
         'max_active_loans'
@@ -62,6 +63,9 @@ $all_settings = $settings_stmt->fetchAll(PDO::FETCH_ASSOC);
 $settings = [];
 foreach ($all_settings as $setting) {
     $settings[$setting['setting_key']] = $setting['setting_value'];
+}
+if (!isset($settings['default_loan_term_days']) && isset($settings['default_loan_term'])) {
+    $settings['default_loan_term_days'] = $settings['default_loan_term'];
 }
 
 // Get system statistics
@@ -248,6 +252,7 @@ $system_stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
             </div>
 
             <form method="POST">
+                <?php echo csrf_input(); ?>
                 <!-- Loan Settings -->
                 <div class="settings-section">
                     <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
@@ -296,9 +301,9 @@ $system_stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
                             <label class="setting-label">Default Loan Term (Days)</label>
                             <p class="setting-description">Standard repayment period for loans</p>
                             <input type="number" 
-                                   name="default_loan_term" 
+                                   name="default_loan_term_days" 
                                    class="setting-value" 
-                                   value="<?php echo $settings['default_loan_term']; ?>"
+                                   value="<?php echo $settings['default_loan_term_days'] ?? 30; ?>"
                                    min="7"
                                    max="365"
                                    required>

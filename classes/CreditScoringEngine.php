@@ -88,6 +88,7 @@ class CreditScoringEngine
                 'income_stability'   => ['score' => $incomeScore, 'max' => self::MAX_INCOME_STABILITY],
                 'alternative_data'   => ['score' => $altDataScore, 'max' => self::MAX_ALTERNATIVE_DATA],
             ],
+            'tips' => $this->generateTips($data, $paymentScore, $utilizationScore, $incomeScore, $altDataScore),
         ];
     }
 
