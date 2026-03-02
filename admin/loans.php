@@ -14,6 +14,7 @@ $errors = [];
 
 // Handle loan actions (FIFO: application_id for pending applications)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_or_fail();
     $action = $_POST['action'] ?? '';
     $application_id = (int)($_POST['application_id'] ?? 0);
 
@@ -264,6 +265,7 @@ $stats = [
                                     <td><?php echo format_date($a['applied_at']); ?></td>
                                     <td>
                                         <form method="POST" style="display: inline;">
+                                            <?php echo csrf_input(); ?>
                                             <input type="hidden" name="application_id" value="<?php echo $a['id']; ?>">
                                             <input type="hidden" name="action" value="approve">
                                             <button type="submit" class="btn btn-sm" style="background: var(--success); color: white;"
@@ -344,6 +346,7 @@ $stats = [
             <h3 style="margin-bottom: 1rem;">Reject Loan Application</h3>
             
             <form method="POST">
+                <?php echo csrf_input(); ?>
                 <input type="hidden" name="application_id" id="rejectApplicationId">
                 <input type="hidden" name="action" value="reject">
                 

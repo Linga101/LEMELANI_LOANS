@@ -11,6 +11,7 @@ $success = '';
 $form_data = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_or_fail();
     // Sanitize inputs
     $national_id = sanitize_input($_POST['national_id'] ?? '');
     $full_name = sanitize_input($_POST['full_name'] ?? '');
@@ -59,7 +60,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // helper for base64->file
     function save_base64_image($data, $dir, $prefix) {
         if (preg_match('/^data:image\/([^;]+);base64,(.+)$/', $data, $m)) {
-            $ext = $m[1];
+            $ext = strtolower($m[1]);
+            if (!in_array($ext, ['jpg', 'jpeg', 'png'], true)) {
+                return null;
+            }
             $base64 = $m[2];
             $decoded = base64_decode($base64);
             if ($decoded === false) return null;
@@ -142,8 +146,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($check_stmt->rowCount() > 0) {
                 $errors[] = "Email or National ID already registered";
             }
-        } catch(PDOException $e) {
-            $errors[] = "Database error: " . $e->getMessage();
+        } catch(Exception $e) {
+            error_log('Registration lookup error: ' . $e->getMessage());
+            $errors[] = "Unable to process registration right now. Please try again.";
         }
     }
     
@@ -166,6 +171,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
             
             $user_id = $db->lastInsertId();
+
+            if (!empty($id_document_path)) {
+                $doc_query = "INSERT INTO user_documents (user_id, doc_type, file_path, is_verified) 
+                              VALUES (:user_id, 'national_id', :file_path, 0)";
+                $doc_stmt = $db->prepare($doc_query);
+                $doc_stmt->execute([
+                    ':user_id' => $user_id,
+                    ':file_path' => $id_document_path
+                ]);
+            }
             
             // Log audit
             log_audit($user_id, 'USER_REGISTERED', 'users', $user_id);
@@ -179,8 +194,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $success = "Registration successful! Please login to continue. Your account will be verified shortly.";
             $form_data = []; // Clear form data
             
-        } catch(PDOException $e) {
-            $errors[] = "Registration failed: " . $e->getMessage();
+        } catch(Exception $e) {
+            error_log('Registration error: ' . $e->getMessage());
+            $errors[] = "Registration failed. Please try again later.";
         }
     }
 }
@@ -381,6 +397,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <form id="registerForm" method="POST" enctype="multipart/form-data">
+                <?php echo csrf_input(); ?>
                 <!-- progress bubbles -->
                 <div class="progress-container">
                     <div class="progress-step active" data-step="1">1</div>
@@ -466,7 +483,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <button type="button" class="btn btn-primary" id="nextBtn">Next</button>
                     <button type="submit" class="btn btn-success hidden" id="submitBtn">Register</button>
                 </div>
-
+            </form>
 
             <div class="auth-footer">
                 Already have an account? <a href="<?php echo site_url('login.php'); ?>">Login here</a>

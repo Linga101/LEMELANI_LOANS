@@ -29,7 +29,7 @@ foreach ($loans as $l) {
     if ($l['status'] !== 'rejected') {
         $total_borrowed += $l['loan_amount'];
     }
-    if ($l['status'] === 'repaid') {
+    if ($l['status'] === 'completed') {
         $total_repaid += $l['total_amount'];
     }
     if ($l['status'] === 'active' || $l['status'] === 'disbursed') {
@@ -241,7 +241,7 @@ foreach ($loans as $l) {
                 <a href="loans.php?status=approved" class="filter-tab <?php echo $filter_status === 'approved' ? 'active' : ''; ?>">
                     Approved
                 </a>
-                <a href="loans.php?status=repaid" class="filter-tab <?php echo $filter_status === 'repaid' ? 'active' : ''; ?>">
+                <a href="loans.php?status=completed" class="filter-tab <?php echo $filter_status === 'completed' ? 'active' : ''; ?>">
                     Repaid
                 </a>
                 <a href="loans.php?status=overdue" class="filter-tab <?php echo $filter_status === 'overdue' ? 'active' : ''; ?>">
@@ -282,12 +282,12 @@ foreach ($loans as $l) {
                                     'approved', 'disbursed', 'active' => 'success',
                                     'pending' => 'warning',
                                     'overdue' => 'danger',
-                                    'repaid' => 'info',
+                                    'completed' => 'info',
                                     'rejected' => 'secondary',
                                     default => 'secondary'
                                 };
                             ?>">
-                                <?php echo ucfirst($l['status']); ?>
+                                <?php echo $l['status'] === 'completed' ? 'Repaid' : ucfirst($l['status']); ?>
                             </span>
                         </div>
 

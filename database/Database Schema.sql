@@ -287,6 +287,23 @@ CREATE TABLE audit_log (
 );
 
 -- ============================================================
+-- 13b. PASSWORD RESET TOKENS - Secure password recovery
+-- ============================================================
+CREATE TABLE password_reset_tokens (
+    id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id       INT UNSIGNED NOT NULL,
+    selector      VARCHAR(24)  NOT NULL UNIQUE,
+    token_hash    CHAR(64)     NOT NULL,
+    expires_at    DATETIME     NOT NULL,
+    used_at       DATETIME NULL,
+    requested_ip  VARCHAR(45),
+    created_at    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX idx_user_created (user_id, created_at),
+    INDEX idx_selector_expires (selector, expires_at)
+);
+
+-- ============================================================
 -- 14. SYSTEM SETTINGS — Config (Lemelani)
 -- ============================================================
 CREATE TABLE system_settings (

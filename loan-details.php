@@ -29,7 +29,11 @@ $schedule_stmt->execute([':loan_id' => $loan_id]);
 $schedule = $schedule_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get payment history
-$payment_query = "SELECT * FROM repayments WHERE loan_id = :loan_id ORDER BY payment_date DESC";
+$payment_query = "SELECT repayment_id, loan_id, user_id, amount_paid_mwk AS payment_amount, payment_method,
+                         payment_reference AS transaction_reference, paid_at AS payment_date, payment_status
+                  FROM repayments
+                  WHERE loan_id = :loan_id
+                  ORDER BY paid_at DESC";
 $payment_stmt = $db->prepare($payment_query);
 $payment_stmt->execute([':loan_id' => $loan_id]);
 $payments = $payment_stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -190,12 +194,12 @@ $payments = $payment_stmt->fetchAll(PDO::FETCH_ASSOC);
                                 'approved', 'disbursed', 'active' => 'success',
                                 'pending' => 'warning',
                                 'overdue' => 'danger',
-                                'repaid' => 'info',
+                                'completed' => 'info',
                                 'rejected' => 'secondary',
                                 default => 'secondary'
                             };
                         ?>" style="margin-left: 1rem;">
-                            <?php echo ucfirst($loan_data['status']); ?>
+                            <?php echo $loan_data['status'] === 'completed' ? 'Repaid' : ucfirst($loan_data['status']); ?>
                         </span>
                     </p>
                 </div>
@@ -229,7 +233,7 @@ $payments = $payment_stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     <div class="detail-item">
                         <span class="detail-label">Loan Term</span>
-                        <span class="detail-value"><?php echo $loan_data['loan_term_days']; ?> days</span>
+                        <span class="detail-value"><?php echo (int)$loan_data['loan_term_months']; ?> month(s)</span>
                     </div>
 
                     <?php if ($loan_data['disbursement_date']): ?>
@@ -261,7 +265,7 @@ $payments = $payment_stmt->fetchAll(PDO::FETCH_ASSOC);
                 <?php endif; ?>
 
                 <!-- Repayment Progress -->
-                <?php if (in_array($loan_data['status'], ['active', 'overdue', 'repaid'])): ?>
+                <?php if (in_array($loan_data['status'], ['active', 'overdue', 'completed'])): ?>
                     <?php
                     $paid_amount = $loan_data['total_amount'] - $loan_data['remaining_balance'];
                     $progress_percent = ($paid_amount / $loan_data['total_amount']) * 100;

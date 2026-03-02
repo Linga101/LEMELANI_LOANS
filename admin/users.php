@@ -14,6 +14,7 @@ $errors = [];
 
 // Handle user actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_or_fail();
     $action = $_POST['action'] ?? '';
     $user_id = intval($_POST['user_id'] ?? 0);
     
@@ -396,6 +397,7 @@ $active_users = count($user->getAllUsers(['role' => 'customer', 'account_status'
                                                 
                                                 <?php if ($u['verification_status'] === 'pending'): ?>
                                                     <form method="POST" style="display: inline;">
+                                                        <?php echo csrf_input(); ?>
                                                         <input type="hidden" name="user_id" value="<?php echo $u['user_id']; ?>">
                                                         <input type="hidden" name="action" value="verify">
                                                         <button type="submit" class="btn btn-sm" style="background: var(--success); color: white;">
@@ -407,6 +409,7 @@ $active_users = count($user->getAllUsers(['role' => 'customer', 'account_status'
                                                 <?php if ($u['account_status'] === 'active'): ?>
                                                     <form method="POST" style="display: inline;" 
                                                           onsubmit="return confirm('Suspend this user account?')">
+                                                        <?php echo csrf_input(); ?>
                                                         <input type="hidden" name="user_id" value="<?php echo $u['user_id']; ?>">
                                                         <input type="hidden" name="action" value="suspend">
                                                         <button type="submit" class="btn btn-danger btn-sm">
@@ -415,6 +418,7 @@ $active_users = count($user->getAllUsers(['role' => 'customer', 'account_status'
                                                     </form>
                                                 <?php elseif ($u['account_status'] === 'suspended'): ?>
                                                     <form method="POST" style="display: inline;">
+                                                        <?php echo csrf_input(); ?>
                                                         <input type="hidden" name="user_id" value="<?php echo $u['user_id']; ?>">
                                                         <input type="hidden" name="action" value="activate">
                                                         <button type="submit" class="btn btn-sm" style="background: var(--success); color: white;">
@@ -441,6 +445,7 @@ $active_users = count($user->getAllUsers(['role' => 'customer', 'account_status'
             <p class="text-secondary mb-3" id="modalUserName"></p>
             
             <form method="POST">
+                <?php echo csrf_input(); ?>
                 <input type="hidden" name="user_id" id="modalUserId">
                 <input type="hidden" name="action" value="adjust_credit">
                 

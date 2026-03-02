@@ -18,6 +18,7 @@ $application_result = null;
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_or_fail();
     $loan_amount = floatval($_POST['loan_amount'] ?? 0);
     $loan_purpose = sanitize_input($_POST['loan_purpose'] ?? '');
     
@@ -41,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'loan_amount' => $loan_amount,
             'loan_purpose' => $loan_purpose,
             'interest_rate' => DEFAULT_INTEREST_RATE,
-            'loan_term_days' => DEFAULT_LOAN_TERM
+            'term_months' => (int)(defined('DEFAULT_LOAN_TERM_MONTHS') ? DEFAULT_LOAN_TERM_MONTHS : 3)
         ];
         
         $loan_id = $loan->createLoan($loan_data);
@@ -60,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Get system settings
 $settings_query = "SELECT setting_key, setting_value FROM system_settings 
-                   WHERE setting_key IN ('min_loan_amount', 'max_loan_amount', 'default_interest_rate', 'default_loan_term')";
+                   WHERE setting_key IN ('min_loan_amount', 'max_loan_amount', 'default_interest_rate', 'default_loan_term_days', 'default_loan_term_months')";
 $settings_stmt = $db->prepare($settings_query);
 $settings_stmt->execute();
 $settings_result = $settings_stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -94,6 +95,7 @@ foreach ($settings_result as $setting) {
             background: var(--border-color);
             border-radius: 4px;
             outline: none;
+            appearance: none;
             -webkit-appearance: none;
         }
 
@@ -341,6 +343,7 @@ foreach ($settings_result as $setting) {
 
                 <!-- Loan Calculator -->
                 <form method="POST" id="loanForm">
+                    <?php echo csrf_input(); ?>
                     <div class="loan-calculator">
                         <h3>Loan Amount</h3>
                         <p class="text-secondary">Select the amount you wish to borrow</p>

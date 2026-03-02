@@ -17,6 +17,7 @@ $user_data = $user->getUserById(get_user_id());
 
 // Handle profile update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_or_fail();
     $action = $_POST['action'] ?? '';
     
     if ($action === 'update_profile') {
@@ -359,10 +360,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <!-- Section Tabs -->
             <div class="section-tabs">
-                <div class="section-tab active" onclick="switchSection('personal')">Personal Information</div>
-                <div class="section-tab" onclick="switchSection('security')">Security</div>
-                <div class="section-tab" onclick="switchSection('documents')">Documents</div>
-                <div class="section-tab" onclick="switchSection('account')">Account Details</div>
+                <div class="section-tab active" onclick="switchSection(event, 'personal')">Personal Information</div>
+                <div class="section-tab" onclick="switchSection(event, 'security')">Security</div>
+                <div class="section-tab" onclick="switchSection(event, 'documents')">Documents</div>
+                <div class="section-tab" onclick="switchSection(event, 'account')">Account Details</div>
             </div>
 
             <!-- Personal Information Section -->
@@ -374,6 +375,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                     <div style="padding: 2rem;">
                         <form method="POST">
+                            <?php echo csrf_input(); ?>
                             <input type="hidden" name="action" value="update_profile">
                             
                             <div class="form-group">
@@ -419,6 +421,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                     <div style="padding: 2rem;">
                         <form method="POST">
+                            <?php echo csrf_input(); ?>
                             <input type="hidden" name="action" value="change_password">
                             
                             <div class="form-group">
@@ -480,7 +483,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <h4 style="margin-bottom: 1rem;">Selfie Photo</h4>
                                 <?php if (!empty($user_data['selfie_path'])): ?>
 
-                                    <img src="<?php echo UPLOAD_URL . $user_data['selfie_path']; ?>" alt="Selfie">
+                                    <img src="<?php echo site_url('view-document.php?type=selfie&user_id=' . (int)get_user_id()); ?>" alt="Selfie">
                                     <div class="text-secondary" style="font-size: 0.875rem;">
                                         <i class="fas fa-check" style="color: var(--success);"></i> Uploaded and verified
                                     </div>
@@ -497,12 +500,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                                     <?php if (strpos($user_data['id_document_path'], '.pdf') !== false): ?>
                                         <div style="font-size: 4rem; margin: 2rem 0;"><i class="fas fa-file-alt"></i></div>
-                                        <a href="<?php echo UPLOAD_URL . $user_data['id_document_path']; ?>" 
+                                        <a href="<?php echo site_url('view-document.php?type=national_id&user_id=' . (int)get_user_id()); ?>" 
                                            target="_blank" class="btn btn-secondary btn-sm">
                                             View PDF
                                         </a>
                                     <?php else: ?>
-                                        <img src="<?php echo UPLOAD_URL . $user_data['id_document_path']; ?>" alt="National ID">
+                                        <img src="<?php echo site_url('view-document.php?type=national_id&user_id=' . (int)get_user_id()); ?>" alt="National ID">
                                     <?php endif; ?>
                                     <div class="text-secondary" style="font-size: 0.875rem; margin-top: 1rem;">
                                         <i class="fas fa-check" style="color: var(--success);"></i> Uploaded and verified
@@ -594,7 +597,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <script>
-        function switchSection(sectionName) {
+        function switchSection(event, sectionName) {
             // Hide all sections
             document.querySelectorAll('.section-content').forEach(section => {
                 section.classList.remove('active');

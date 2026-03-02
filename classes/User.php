@@ -31,21 +31,24 @@ class User {
      * Get user by ID
      */
     public function getUserById($user_id) {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE user_id = :user_id LIMIT 1";
+        $query = "SELECT u.*,
+                         u.profile_photo AS selfie_path,
+                         (
+                            SELECT ud.file_path
+                            FROM user_documents ud
+                            WHERE ud.user_id = u.user_id AND ud.doc_type = 'national_id'
+                            ORDER BY ud.uploaded_at DESC
+                            LIMIT 1
+                         ) AS id_document_path
+                  FROM " . $this->table_name . " u
+                  WHERE u.user_id = :user_id
+                  LIMIT 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':user_id', $user_id);
         $stmt->execute();
         
         if ($stmt->rowCount() > 0) {
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            // ensure optional document fields exist to prevent undefined index notices
-            if (!array_key_exists('selfie_path', $row)) {
-                $row['selfie_path'] = null;
-            }
-            if (!array_key_exists('id_document_path', $row)) {
-                $row['id_document_path'] = null;
-            }
 
             $this->mapProperties($row);
             return $row;
@@ -379,9 +382,7 @@ class User {
         $this->verification_status = $row['verification_status'];
         $this->account_status = $row['account_status'];
         $this->credit_score = $row['credit_score'];
-        // Some installations/schema versions may not include the selfie/id columns.
-        // Use null-coalescing to avoid notices if the fields are absent.
-        $this->selfie_path = $row['selfie_path'] ?? null;
+        $this->selfie_path = $row['selfie_path'] ?? ($row['profile_photo'] ?? null);
         $this->id_document_path = $row['id_document_path'] ?? null;
         $this->created_at = $row['created_at'];
         $this->last_login = $row['last_login'];

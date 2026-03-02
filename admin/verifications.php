@@ -12,6 +12,7 @@ $errors = [];
 
 // Handle verification actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_or_fail();
     $action = $_POST['action'] ?? '';
     $user_id = intval($_POST['user_id'] ?? 0);
     
@@ -63,29 +64,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Get pending verifications
-$pending_query = "SELECT * FROM users 
-                  WHERE verification_status = 'pending' 
-                  AND role = 'customer'
-                  ORDER BY created_at ASC";
+$pending_query = "SELECT u.*,
+                         u.profile_photo AS selfie_path,
+                         (
+                            SELECT ud.file_path
+                            FROM user_documents ud
+                            WHERE ud.user_id = u.user_id AND ud.doc_type = 'national_id'
+                            ORDER BY ud.uploaded_at DESC
+                            LIMIT 1
+                         ) AS id_document_path
+                  FROM users u
+                  WHERE u.verification_status = 'pending'
+                  AND u.role = 'customer'
+                  ORDER BY u.created_at ASC";
 $pending_stmt = $db->prepare($pending_query);
 $pending_stmt->execute();
 $pending_users = $pending_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get recently verified
-$verified_query = "SELECT * FROM users 
-                   WHERE verification_status = 'verified' 
-                   AND role = 'customer'
-                   ORDER BY updated_at DESC
+$verified_query = "SELECT u.* FROM users u
+                   WHERE u.verification_status = 'verified'
+                   AND u.role = 'customer'
+                   ORDER BY u.updated_at DESC
                    LIMIT 10";
 $verified_stmt = $db->prepare($verified_query);
 $verified_stmt->execute();
 $verified_users = $verified_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get rejected verifications
-$rejected_query = "SELECT * FROM users 
-                   WHERE verification_status = 'rejected' 
-                   AND role = 'customer'
-                   ORDER BY updated_at DESC
+$rejected_query = "SELECT u.* FROM users u
+                   WHERE u.verification_status = 'rejected'
+                   AND u.role = 'customer'
+                   ORDER BY u.updated_at DESC
                    LIMIT 10";
 $rejected_stmt = $db->prepare($rejected_query);
 $rejected_stmt->execute();
@@ -325,13 +335,13 @@ $rejected_users = $rejected_stmt->fetchAll(PDO::FETCH_ASSOC);
 
             <!-- Tabs -->
             <div class="tabs">
-                <div class="tab active" onclick="switchTab('pending')">
+                <div class="tab active" onclick="switchTab(event, 'pending')">
                     Pending (<?php echo count($pending_users); ?>)
                 </div>
-                <div class="tab" onclick="switchTab('verified')">
+                <div class="tab" onclick="switchTab(event, 'verified')">
                     Verified (<?php echo count($verified_users); ?>)
                 </div>
-                <div class="tab" onclick="switchTab('rejected')">
+                <div class="tab" onclick="switchTab(event, 'rejected')">
                     Rejected (<?php echo count($rejected_users); ?>)
                 </div>
             </div>
@@ -373,10 +383,10 @@ $rejected_users = $rejected_stmt->fetchAll(PDO::FETCH_ASSOC);
                             <h4 style="margin-bottom: 1rem;">Verification Documents</h4>
                             <div class="documents-grid">
                                 <!-- Selfie -->
-                                <div class="document-preview" onclick="viewDocument('<?php echo UPLOAD_URL . $u['selfie_path']; ?>', 'Selfie - <?php echo htmlspecialchars($u['full_name']); ?>')">
+                                <div class="document-preview" onclick="viewDocument('<?php echo site_url('view-document.php?type=selfie&user_id=' . (int)$u['user_id']); ?>', 'Selfie - <?php echo htmlspecialchars($u['full_name']); ?>')">
                                     <?php if (!empty($u['selfie_path'])): ?>
 
-                                        <img src="<?php echo UPLOAD_URL . $u['selfie_path']; ?>" alt="Selfie">
+                                        <img src="<?php echo site_url('view-document.php?type=selfie&user_id=' . (int)$u['user_id']); ?>" alt="Selfie">
                                     <?php else: ?>
                                         <div class="document-icon"><i class="fas fa-camera"></i></div>
                                     <?php endif; ?>
@@ -385,12 +395,12 @@ $rejected_users = $rejected_stmt->fetchAll(PDO::FETCH_ASSOC);
                                 </div>
 
                                 <!-- National ID -->
-                                <div class="document-preview" onclick="viewDocument('<?php echo UPLOAD_URL . $u['id_document_path']; ?>', 'National ID - <?php echo htmlspecialchars($u['full_name']); ?>')">
+                                <div class="document-preview" onclick="viewDocument('<?php echo site_url('view-document.php?type=national_id&user_id=' . (int)$u['user_id']); ?>', 'National ID - <?php echo htmlspecialchars($u['full_name']); ?>')">
                                     <?php if (!empty($u['id_document_path'])): ?>
                                         <?php if (strpos($u['id_document_path'], '.pdf') !== false): ?>
                                             <div class="document-icon"><i class="fas fa-file-alt"></i></div>
                                         <?php else: ?>
-                                            <img src="<?php echo UPLOAD_URL . $u['id_document_path']; ?>" alt="National ID">
+                                            <img src="<?php echo site_url('view-document.php?type=national_id&user_id=' . (int)$u['user_id']); ?>" alt="National ID">
                                         <?php endif; ?>
                                     <?php else: ?>
                                         <div class="document-icon"><i class="fas fa-id-card"></i></div>
@@ -402,6 +412,7 @@ $rejected_users = $rejected_stmt->fetchAll(PDO::FETCH_ASSOC);
 
                             <div style="display: flex; gap: 1rem;">
                                 <form method="POST" style="flex: 1;" onsubmit="return confirm('Verify this user?')">
+                                    <?php echo csrf_input(); ?>
                                     <input type="hidden" name="user_id" value="<?php echo $u['user_id']; ?>">
                                     <input type="hidden" name="action" value="verify">
                                     <button type="submit" class="btn btn-primary btn-block">
@@ -537,6 +548,7 @@ $rejected_users = $rejected_stmt->fetchAll(PDO::FETCH_ASSOC);
             <p class="text-secondary mb-3" id="rejectUserName"></p>
             
             <form method="POST">
+                <?php echo csrf_input(); ?>
                 <input type="hidden" name="user_id" id="rejectUserId">
                 <input type="hidden" name="action" value="reject">
                 
@@ -557,7 +569,7 @@ $rejected_users = $rejected_stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <script>
         // Tab switching
-        function switchTab(tabName) {
+        function switchTab(event, tabName) {
             // Hide all tabs
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
