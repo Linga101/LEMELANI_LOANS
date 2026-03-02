@@ -58,9 +58,13 @@ if ($search) {
 // Disbursed loans (from loans table with legacy aliases)
 $loans_query = "SELECT l.loan_id, l.application_id, l.user_id, l.principal_mwk AS loan_amount,
                        l.outstanding_balance_mwk AS remaining_balance, l.due_date, l.status, l.created_at,
-                       u.full_name, u.email, u.phone, u.credit_score
+                       u.full_name, u.email, u.phone, u.credit_score,
+                       ca.account_provider AS payout_account_provider, ca.account_number AS payout_account_number,
+                       pa.account_provider AS source_account_provider, pa.account_number AS source_account_number
                 FROM loans l
                 JOIN users u ON l.user_id = u.user_id
+                LEFT JOIN customer_accounts ca ON l.customer_account_id = ca.account_id
+                LEFT JOIN platform_accounts pa ON l.platform_account_id = pa.account_id
                 WHERE 1=1";
 $loans_params = [];
 $filter_status = $_GET['status'] ?? 'all';
@@ -139,6 +143,9 @@ $stats = [
             </a></li>
             <li><a href="<?php echo site_url('admin/reports.php'); ?>">
                 <i class="fas fa-chart-bar"></i> Reports
+            </a></li>
+            <li><a href="<?php echo site_url('admin/platform-accounts.php'); ?>">
+                <i class="fas fa-university"></i> Platform Accounts
             </a></li>
             <li><a href="<?php echo site_url('admin/settings.php'); ?>">
                 <i class="fas fa-cog"></i> Settings
@@ -247,6 +254,7 @@ $stats = [
                                 <th>Product</th>
                                 <th>Amount</th>
                                 <th>Credit</th>
+                                <th>Payout Account</th>
                                 <th>Applied</th>
                                 <th>Actions</th>
                             </tr>
@@ -262,6 +270,15 @@ $stats = [
                                     <td><?php echo htmlspecialchars($a['product_name']); ?></td>
                                     <td><?php echo format_currency($a['requested_amount_mwk']); ?></td>
                                     <td><?php echo (int)($a['credit_score'] ?? 0); ?></td>
+                                    <td>
+                                        <?php if (!empty($a['payout_account_number'])): ?>
+                                            <div style="font-size: 0.875rem;">
+                                                <?php echo htmlspecialchars(($a['payout_account_provider'] ?? 'Account') . ' - ' . $a['payout_account_number']); ?>
+                                            </div>
+                                        <?php else: ?>
+                                            <span class="text-secondary">Not set</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><?php echo format_date($a['applied_at']); ?></td>
                                     <td>
                                         <form method="POST" style="display: inline;">
@@ -293,6 +310,7 @@ $stats = [
                                 <th>Amount</th>
                                 <th>Credit</th>
                                 <th>Status</th>
+                                <th>Accounts</th>
                                 <th>Disbursed</th>
                                 <th>Due Date</th>
                                 <th>Actions</th>
@@ -301,7 +319,7 @@ $stats = [
                         <tbody>
                             <?php if (empty($loans)): ?>
                                 <tr>
-                                    <td colspan="8" style="text-align: center; padding: 3rem; color: var(--text-secondary);">No disbursed loans</td>
+                                    <td colspan="9" style="text-align: center; padding: 3rem; color: var(--text-secondary);">No disbursed loans</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($loans as $l): ?>
@@ -322,6 +340,14 @@ $stats = [
                                             <span class="badge badge-<?php echo in_array($l['status'], ['active']) ? 'success' : ($l['status'] === 'overdue' ? 'danger' : 'info'); ?>">
                                                 <?php echo $l['status'] === 'completed' ? 'Repaid' : ucfirst($l['status']); ?>
                                             </span>
+                                        </td>
+                                        <td>
+                                            <div style="font-size: 0.8rem;">
+                                                <strong>To:</strong> <?php echo !empty($l['payout_account_number']) ? htmlspecialchars(($l['payout_account_provider'] ?? 'Account') . ' - ' . $l['payout_account_number']) : '-'; ?>
+                                            </div>
+                                            <div style="font-size: 0.8rem; margin-top: 0.25rem;">
+                                                <strong>From:</strong> <?php echo !empty($l['source_account_number']) ? htmlspecialchars(($l['source_account_provider'] ?? 'Platform') . ' - ' . $l['source_account_number']) : '-'; ?>
+                                            </div>
                                         </td>
                                         <td><?php echo format_date($l['created_at']); ?></td>
                                         <td><?php echo $l['due_date'] ? format_date($l['due_date']) : '-'; ?></td>

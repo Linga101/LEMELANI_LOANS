@@ -12,6 +12,7 @@ $user = new User($db);
 $loan = new Loan($db);
 
 $user_data = $user->getUserById(get_user_id());
+$payout_accounts = $loan->getUserPayoutAccounts(get_user_id());
 $errors = [];
 $success = null;
 $application_result = null;
@@ -21,6 +22,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf_or_fail();
     $loan_amount = floatval($_POST['loan_amount'] ?? 0);
     $loan_purpose = sanitize_input($_POST['loan_purpose'] ?? '');
+    $selected_payout_account = (int)($_POST['customer_account_id'] ?? 0);
+    $add_new_account = isset($_POST['add_new_account']) && $_POST['add_new_account'] === '1';
     
     // Validation
     if ($loan_amount < MIN_LOAN_AMOUNT || $loan_amount > MAX_LOAN_AMOUNT) {
@@ -34,6 +37,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$eligibility['eligible']) {
         $errors[] = $eligibility['reason'];
     }
+
+    // Require payout account
+    if (empty($errors) && $add_new_account) {
+        $new_account_data = [
+            'account_type' => sanitize_input($_POST['account_type'] ?? ''),
+            'account_provider' => sanitize_input($_POST['account_provider'] ?? ''),
+            'account_name' => sanitize_input($_POST['account_name'] ?? ''),
+            'account_number' => sanitize_input($_POST['account_number'] ?? ''),
+            'branch_name' => sanitize_input($_POST['branch_name'] ?? ''),
+            'swift_code' => sanitize_input($_POST['swift_code'] ?? ''),
+            'set_default' => !empty($_POST['set_default']),
+        ];
+
+        $created_account = $loan->createUserPayoutAccount(get_user_id(), $new_account_data);
+        if (!$created_account['success']) {
+            $errors[] = $created_account['message'] ?? 'Unable to create payout account';
+        } else {
+            $selected_payout_account = (int)$created_account['account_id'];
+            $payout_accounts = $loan->getUserPayoutAccounts(get_user_id());
+        }
+    }
+
+    if (empty($errors) && $selected_payout_account <= 0) {
+        $errors[] = "Please select a payout account for disbursement.";
+    }
     
     // Process loan application if no errors
     if (empty($errors)) {
@@ -42,7 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'loan_amount' => $loan_amount,
             'loan_purpose' => $loan_purpose,
             'interest_rate' => DEFAULT_INTEREST_RATE,
-            'term_months' => (int)(defined('DEFAULT_LOAN_TERM_MONTHS') ? DEFAULT_LOAN_TERM_MONTHS : 3)
+            'term_months' => (int)(defined('DEFAULT_LOAN_TERM_MONTHS') ? DEFAULT_LOAN_TERM_MONTHS : 3),
+            'customer_account_id' => $selected_payout_account
         ];
         
         $loan_id = $loan->createLoan($loan_data);
@@ -70,6 +99,9 @@ $settings = [];
 foreach ($settings_result as $setting) {
     $settings[$setting['setting_key']] = $setting['setting_value'];
 }
+
+$selected_payout_account = (int)($_POST['customer_account_id'] ?? 0);
+$add_new_account = isset($_POST['add_new_account']) && $_POST['add_new_account'] === '1';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -397,6 +429,95 @@ foreach ($settings_result as $setting) {
                                   <?php echo $user_data['verification_status'] !== 'verified' ? 'disabled' : ''; ?>></textarea>
                     </div>
 
+                    <div class="card" style="margin-bottom: 1.5rem;">
+                        <div class="card-header">
+                            <h3 class="card-title">Disbursement Account</h3>
+                            <p class="card-subtitle">Select where your approved funds should be sent.</p>
+                        </div>
+                        <div style="padding: 1.5rem;">
+                            <?php if (!empty($payout_accounts)): ?>
+                                <div class="form-group">
+                                    <label for="customer_account_id" class="form-label">Choose Existing Account *</label>
+                                    <select id="customer_account_id"
+                                            name="customer_account_id"
+                                            class="form-control"
+                                            <?php echo $user_data['verification_status'] !== 'verified' ? 'disabled' : ''; ?>>
+                                        <option value="">Select account...</option>
+                                        <?php foreach ($payout_accounts as $acc): ?>
+                                            <?php
+                                            $label = strtoupper(str_replace('_', ' ', $acc['account_type'])) . ' - '
+                                                . $acc['account_provider'] . ' - ' . $acc['account_name']
+                                                . ' (' . $acc['account_number'] . ')';
+                                            $isSelected = $selected_payout_account === (int)$acc['account_id'];
+                                            ?>
+                                            <option value="<?php echo (int)$acc['account_id']; ?>" <?php echo $isSelected ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($label); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            <?php else: ?>
+                                <p class="text-secondary" style="margin: 0 0 1rem 0;">You do not have any payout account yet. Add one below.</p>
+                            <?php endif; ?>
+
+                            <label style="display:flex; align-items:center; gap:0.5rem; margin: 1rem 0;">
+                                <input type="checkbox"
+                                       id="add_new_account"
+                                       name="add_new_account"
+                                       value="1"
+                                       <?php echo $add_new_account || empty($payout_accounts) ? 'checked' : ''; ?>
+                                       <?php echo $user_data['verification_status'] !== 'verified' ? 'disabled' : ''; ?>>
+                                Add new payout account
+                            </label>
+
+                            <div id="newAccountFields" style="<?php echo ($add_new_account || empty($payout_accounts)) ? '' : 'display:none;'; ?>">
+                                <div class="form-group">
+                                    <label for="account_type" class="form-label">Account Type *</label>
+                                    <select id="account_type" name="account_type" class="form-control" <?php echo $user_data['verification_status'] !== 'verified' ? 'disabled' : ''; ?>>
+                                        <option value="bank_account">Bank Account</option>
+                                        <option value="mobile_money">Mobile Money</option>
+                                        <option value="wallet">Digital Wallet</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="account_provider" class="form-label">Provider / Bank *</label>
+                                    <input type="text" id="account_provider" name="account_provider" class="form-control"
+                                           value="<?php echo htmlspecialchars($_POST['account_provider'] ?? ''); ?>"
+                                           placeholder="e.g. National Bank, Airtel Money"
+                                           <?php echo $user_data['verification_status'] !== 'verified' ? 'disabled' : ''; ?>>
+                                </div>
+                                <div class="form-group">
+                                    <label for="account_name" class="form-label">Account Name *</label>
+                                    <input type="text" id="account_name" name="account_name" class="form-control"
+                                           value="<?php echo htmlspecialchars($_POST['account_name'] ?? $user_data['full_name']); ?>"
+                                           <?php echo $user_data['verification_status'] !== 'verified' ? 'disabled' : ''; ?>>
+                                </div>
+                                <div class="form-group">
+                                    <label for="account_number" class="form-label">Account Number / Wallet Number *</label>
+                                    <input type="text" id="account_number" name="account_number" class="form-control"
+                                           value="<?php echo htmlspecialchars($_POST['account_number'] ?? ''); ?>"
+                                           <?php echo $user_data['verification_status'] !== 'verified' ? 'disabled' : ''; ?>>
+                                </div>
+                                <div class="form-group">
+                                    <label for="branch_name" class="form-label">Branch (Optional)</label>
+                                    <input type="text" id="branch_name" name="branch_name" class="form-control"
+                                           value="<?php echo htmlspecialchars($_POST['branch_name'] ?? ''); ?>"
+                                           <?php echo $user_data['verification_status'] !== 'verified' ? 'disabled' : ''; ?>>
+                                </div>
+                                <div class="form-group">
+                                    <label for="swift_code" class="form-label">SWIFT Code (Optional)</label>
+                                    <input type="text" id="swift_code" name="swift_code" class="form-control"
+                                           value="<?php echo htmlspecialchars($_POST['swift_code'] ?? ''); ?>"
+                                           <?php echo $user_data['verification_status'] !== 'verified' ? 'disabled' : ''; ?>>
+                                </div>
+                                <label style="display:flex; align-items:center; gap:0.5rem;">
+                                    <input type="checkbox" name="set_default" value="1" <?php echo !empty($_POST['set_default']) ? 'checked' : ''; ?>>
+                                    Set as my default payout account
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Submit Button -->
                     <button type="submit" 
                             class="btn btn-primary btn-block btn-lg"
@@ -470,6 +591,9 @@ foreach ($settings_result as $setting) {
         const amountDisplay = document.getElementById('amountDisplay');
         const totalAmountDisplay = document.getElementById('totalAmount');
         const interestRate = <?php echo DEFAULT_INTEREST_RATE; ?>;
+        const addAccountCheckbox = document.getElementById('add_new_account');
+        const newAccountFields = document.getElementById('newAccountFields');
+        const accountSelect = document.getElementById('customer_account_id');
 
         function updateLoanDisplay() {
             const amount = parseInt(slider.value);
@@ -480,7 +604,17 @@ foreach ($settings_result as $setting) {
             totalAmountDisplay.textContent = 'MK ' + total.toLocaleString();
         }
 
-        slider.addEventListener('input', updateLoanDisplay);
+        slider?.addEventListener('input', updateLoanDisplay);
+        updateLoanDisplay();
+
+        if (addAccountCheckbox && newAccountFields) {
+            addAccountCheckbox.addEventListener('change', function() {
+                newAccountFields.style.display = this.checked ? '' : 'none';
+                if (accountSelect && this.checked) {
+                    accountSelect.value = '';
+                }
+            });
+        }
 
         // Prevent form resubmission
         if (window.history.replaceState) {

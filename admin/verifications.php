@@ -283,6 +283,9 @@ $rejected_users = $rejected_stmt->fetchAll(PDO::FETCH_ASSOC);
             <li><a href="<?php echo site_url('admin/reports.php'); ?>">
                 <i class="fas fa-chart-bar"></i> Reports
             </a></li>
+            <li><a href="<?php echo site_url('admin/platform-accounts.php'); ?>">
+                <i class="fas fa-university"></i> Platform Accounts
+            </a></li>
             <li><a href="<?php echo site_url('admin/settings.php'); ?>">
                 <i class="fas fa-cog"></i> Settings
             </a></li>

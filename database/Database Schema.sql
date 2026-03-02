@@ -62,6 +62,46 @@ CREATE TABLE user_profiles (
 );
 
 -- ============================================================
+-- 2b. CUSTOMER ACCOUNTS -- Beneficiary accounts for disbursement
+-- ============================================================
+CREATE TABLE customer_accounts (
+    account_id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id             INT UNSIGNED NOT NULL,
+    account_type        ENUM('bank_account','mobile_money','wallet') NOT NULL DEFAULT 'bank_account',
+    account_provider    VARCHAR(100) NOT NULL,
+    account_name        VARCHAR(150) NOT NULL,
+    account_number      VARCHAR(40) NOT NULL,
+    branch_name         VARCHAR(100),
+    swift_code          VARCHAR(20),
+    is_default          TINYINT(1) DEFAULT 0,
+    is_active           TINYINT(1) DEFAULT 1,
+    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX idx_user_accounts (user_id, is_active),
+    UNIQUE KEY uq_user_account (user_id, account_type, account_provider, account_number)
+);
+
+-- ============================================================
+-- 2c. PLATFORM ACCOUNTS -- Lending source accounts
+-- ============================================================
+CREATE TABLE platform_accounts (
+    account_id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    account_type        ENUM('bank_account','mobile_money','wallet','escrow') NOT NULL DEFAULT 'bank_account',
+    account_provider    VARCHAR(100) NOT NULL,
+    account_name        VARCHAR(150) NOT NULL,
+    account_number      VARCHAR(40) NOT NULL,
+    currency_code       CHAR(3) NOT NULL DEFAULT 'MWK',
+    current_balance_mwk DECIMAL(15,2) DEFAULT 0.00,
+    is_default          TINYINT(1) DEFAULT 0,
+    is_active           TINYINT(1) DEFAULT 1,
+    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_platform_active (is_active, is_default),
+    UNIQUE KEY uq_platform_account (account_type, account_provider, account_number)
+);
+
+-- ============================================================
 -- 3. CREDIT SCORES — Computed creditworthiness (Malawi 300–850)
 -- ============================================================
 CREATE TABLE credit_scores (
@@ -332,6 +372,27 @@ INSERT INTO system_settings (setting_key, setting_value, setting_type, descripti
 -- Default admin (password: admin123 — CHANGE IN PRODUCTION)
 INSERT INTO users (national_id, full_name, email, phone, password_hash, role, is_verified, verification_status, account_status, credit_score) VALUES
 ('ADMIN001', 'System Administrator', 'admin@lemelaniloans.com', '+265999000000', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 1, 'verified', 'active', 850);
+
+-- Default platform disbursement account
+INSERT INTO platform_accounts (account_type, account_provider, account_name, account_number, currency_code, current_balance_mwk, is_default, is_active) VALUES
+('bank_account', 'National Bank of Malawi', 'Lemelani Loans Treasury', 'LML-TREASURY-001', 'MWK', 0.00, 1, 1);
+
+-- Link disbursement accounts to loan applications and loans
+ALTER TABLE loan_applications
+    ADD COLUMN customer_account_id INT UNSIGNED NULL AFTER interest_rate,
+    ADD COLUMN platform_account_id INT UNSIGNED NULL AFTER customer_account_id,
+    ADD INDEX idx_app_customer_account (customer_account_id),
+    ADD INDEX idx_app_platform_account (platform_account_id),
+    ADD CONSTRAINT fk_app_customer_account FOREIGN KEY (customer_account_id) REFERENCES customer_accounts(account_id) ON DELETE SET NULL,
+    ADD CONSTRAINT fk_app_platform_account FOREIGN KEY (platform_account_id) REFERENCES platform_accounts(account_id) ON DELETE SET NULL;
+
+ALTER TABLE loans
+    ADD COLUMN customer_account_id INT UNSIGNED NULL AFTER due_date,
+    ADD COLUMN platform_account_id INT UNSIGNED NULL AFTER customer_account_id,
+    ADD INDEX idx_loan_customer_account (customer_account_id),
+    ADD INDEX idx_loan_platform_account (platform_account_id),
+    ADD CONSTRAINT fk_loan_customer_account FOREIGN KEY (customer_account_id) REFERENCES customer_accounts(account_id) ON DELETE SET NULL,
+    ADD CONSTRAINT fk_loan_platform_account FOREIGN KEY (platform_account_id) REFERENCES platform_accounts(account_id) ON DELETE SET NULL;
 
 -- ============================================================
 -- VIEWS

@@ -18,6 +18,12 @@ This folder contains the integrated **Malawi loan lending** schema used by Lemel
 
 2. Ensure `config/database.php` uses the same database name: `lemelani_loans`.
 
+3. If upgrading an existing installation, run:
+
+   ```sql
+   source c:/xampp/htdocs/LEMELANI_LOANS/database/migrations/20260302_add_disbursement_accounts.sql
+   ```
+
 ## Main tables
 
 | Table | Purpose |
