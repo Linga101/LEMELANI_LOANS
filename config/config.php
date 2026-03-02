@@ -6,6 +6,56 @@
 // Directory paths
 define('ROOT_PATH', dirname(__DIR__));
 
+/**
+ * Load local environment variables from ROOT_PATH/.env for development use.
+ * Existing OS/server environment variables always take precedence.
+ */
+function load_dotenv_file($filePath) {
+    if (!is_readable($filePath)) {
+        return;
+    }
+
+    $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if ($lines === false) {
+        return;
+    }
+
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '' || $line[0] === '#') {
+            continue;
+        }
+
+        $eqPos = strpos($line, '=');
+        if ($eqPos === false) {
+            continue;
+        }
+
+        $key = trim(substr($line, 0, $eqPos));
+        $value = trim(substr($line, $eqPos + 1));
+        if ($key === '' || preg_match('/\s/', $key)) {
+            continue;
+        }
+
+        // Strip optional matching quotes around the value.
+        $firstChar = $value !== '' ? $value[0] : '';
+        $lastChar = $value !== '' ? substr($value, -1) : '';
+        if (($firstChar === '"' && $lastChar === '"') || ($firstChar === "'" && $lastChar === "'")) {
+            $value = substr($value, 1, -1);
+        }
+
+        if (getenv($key) !== false) {
+            continue;
+        }
+
+        putenv($key . '=' . $value);
+        $_ENV[$key] = $value;
+        $_SERVER[$key] = $value;
+    }
+}
+
+load_dotenv_file(ROOT_PATH . '/.env');
+
 // Security/session settings
 define('HASH_ALGO', PASSWORD_DEFAULT);
 define('SESSION_LIFETIME', 3600); // 1 hour
@@ -56,6 +106,17 @@ define('SITE_URL', $protocol . '://' . $host . APP_BASE_PATH);
 
 define('SITE_EMAIL', 'info@lemelaniloans.com');
 define('SITE_PHONE', '+265 999 123 456');
+
+// Outbound email settings (override with environment variables in production)
+define('MAIL_FROM_ADDRESS', getenv('MAIL_FROM_ADDRESS') ?: 'lemelani.loans.noreply@gmail.com');
+define('MAIL_FROM_NAME', getenv('MAIL_FROM_NAME') ?: SITE_NAME);
+define('SMTP_HOST', getenv('SMTP_HOST') ?: 'smtp.gmail.com');
+define('SMTP_PORT', (int)(getenv('SMTP_PORT') ?: 465));
+define('SMTP_ENCRYPTION', strtolower((string)(getenv('SMTP_ENCRYPTION') ?: 'ssl'))); // ssl|tls|none
+define('SMTP_USERNAME', getenv('SMTP_USERNAME') ?: 'lemelani.loans.noreply@gmail.com');
+define('SMTP_PASSWORD', str_replace(' ', '', (string)(getenv('SMTP_PASSWORD') ?: getenv('GMAIL_APP_PASSWORD') ?: '')));
+define('PASSWORD_RESET_TTL_MINUTES', 60);
+define('PASSWORD_RESET_REQUEST_COOLDOWN', 60); // seconds
 
 define('UPLOAD_PATH', ROOT_PATH . '/uploads/');
 define('UPLOAD_URL', SITE_URL . '/uploads/');
@@ -252,6 +313,285 @@ function clear_remember_me_token() {
         'httponly' => true,
         'samesite' => 'Lax'
     ]);
+}
+
+function create_password_reset_tokens_table(PDO $db) {
+    static $tableReady = false;
+    if ($tableReady) {
+        return;
+    }
+    $sql = "CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                user_id INT UNSIGNED NOT NULL,
+                selector VARCHAR(24) NOT NULL UNIQUE,
+                token_hash CHAR(64) NOT NULL,
+                expires_at DATETIME NOT NULL,
+                used_at DATETIME NULL,
+                requested_ip VARCHAR(45) NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_user_created (user_id, created_at),
+                INDEX idx_selector_expires (selector, expires_at),
+                FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+    $db->exec($sql);
+    $tableReady = true;
+}
+
+function create_password_reset_token($userId, $ttlMinutes = PASSWORD_RESET_TTL_MINUTES) {
+    $database = new Database();
+    $db = $database->getConnection();
+    if (!$db) {
+        return null;
+    }
+    create_password_reset_tokens_table($db);
+
+    // Invalidate old active tokens for this user before creating a new one.
+    $db->prepare("DELETE FROM password_reset_tokens WHERE user_id = :user_id AND used_at IS NULL")
+        ->execute([':user_id' => (int)$userId]);
+
+    $selector = bin2hex(random_bytes(12));
+    $validator = bin2hex(random_bytes(32));
+    $tokenHash = hash('sha256', $validator);
+    $expiresAt = date('Y-m-d H:i:s', time() + ((int)$ttlMinutes * 60));
+
+    $stmt = $db->prepare("INSERT INTO password_reset_tokens (user_id, selector, token_hash, expires_at, requested_ip)
+                          VALUES (:user_id, :selector, :token_hash, :expires_at, :requested_ip)");
+    $stmt->execute([
+        ':user_id' => (int)$userId,
+        ':selector' => $selector,
+        ':token_hash' => $tokenHash,
+        ':expires_at' => $expiresAt,
+        ':requested_ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+    ]);
+
+    return [
+        'selector' => $selector,
+        'validator' => $validator,
+        'expires_at' => $expiresAt,
+    ];
+}
+
+function can_request_password_reset($userId, $cooldownSeconds = PASSWORD_RESET_REQUEST_COOLDOWN) {
+    $database = new Database();
+    $db = $database->getConnection();
+    if (!$db) {
+        return false;
+    }
+    create_password_reset_tokens_table($db);
+
+    $stmt = $db->prepare("SELECT created_at
+                          FROM password_reset_tokens
+                          WHERE user_id = :user_id
+                          ORDER BY id DESC
+                          LIMIT 1");
+    $stmt->execute([':user_id' => (int)$userId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        return true;
+    }
+    return (time() - strtotime($row['created_at'])) >= (int)$cooldownSeconds;
+}
+
+function validate_password_reset_token($selector, $validator) {
+    if (!preg_match('/^[a-f0-9]{24}$/', (string)$selector) || !preg_match('/^[a-f0-9]{64}$/', (string)$validator)) {
+        return null;
+    }
+
+    $database = new Database();
+    $db = $database->getConnection();
+    if (!$db) {
+        return null;
+    }
+    create_password_reset_tokens_table($db);
+
+    $stmt = $db->prepare("SELECT id, user_id, token_hash, expires_at, used_at
+                          FROM password_reset_tokens
+                          WHERE selector = :selector
+                          LIMIT 1");
+    $stmt->execute([':selector' => $selector]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        return null;
+    }
+    if (!empty($row['used_at'])) {
+        return null;
+    }
+    if (strtotime($row['expires_at']) < time()) {
+        return null;
+    }
+    if (!hash_equals($row['token_hash'], hash('sha256', $validator))) {
+        return null;
+    }
+    return $row;
+}
+
+function consume_password_reset_token($tokenId) {
+    $database = new Database();
+    $db = $database->getConnection();
+    if (!$db) {
+        return false;
+    }
+    create_password_reset_tokens_table($db);
+    $stmt = $db->prepare("UPDATE password_reset_tokens
+                          SET used_at = NOW()
+                          WHERE id = :id AND used_at IS NULL");
+    $stmt->execute([':id' => (int)$tokenId]);
+    return $stmt->rowCount() === 1;
+}
+
+function revoke_user_password_reset_tokens($userId) {
+    $database = new Database();
+    $db = $database->getConnection();
+    if (!$db) {
+        return;
+    }
+    create_password_reset_tokens_table($db);
+    $db->prepare("DELETE FROM password_reset_tokens WHERE user_id = :user_id")->execute([':user_id' => (int)$userId]);
+}
+
+function base64url_encode($value) {
+    return rtrim(strtr(base64_encode((string)$value), '+/', '-_'), '=');
+}
+
+function smtp_read_response($socket) {
+    $response = '';
+    while (($line = fgets($socket, 515)) !== false) {
+        $response .= $line;
+        if (strlen($line) >= 4 && $line[3] === ' ') {
+            break;
+        }
+    }
+    return $response;
+}
+
+function smtp_expect($socket, $allowedCodes) {
+    $response = smtp_read_response($socket);
+    $code = (int)substr($response, 0, 3);
+    if (!in_array($code, (array)$allowedCodes, true)) {
+        throw new RuntimeException('SMTP error: ' . trim($response));
+    }
+    return $response;
+}
+
+function send_email_smtp($toEmail, $toName, $subject, $textBody, $htmlBody = null) {
+    if (SMTP_USERNAME === '' || SMTP_PASSWORD === '') {
+        throw new RuntimeException('SMTP credentials are not configured.');
+    }
+
+    $transport = SMTP_ENCRYPTION;
+    $host = SMTP_HOST;
+    $port = SMTP_PORT;
+    $timeout = 20;
+    $remote = ($transport === 'ssl' ? 'ssl://' : '') . $host . ':' . $port;
+
+    $socket = @stream_socket_client($remote, $errno, $errstr, $timeout, STREAM_CLIENT_CONNECT);
+    if (!$socket) {
+        throw new RuntimeException("SMTP connection failed: {$errstr} ({$errno})");
+    }
+
+    stream_set_timeout($socket, $timeout);
+
+    try {
+        smtp_expect($socket, 220);
+
+        fwrite($socket, "EHLO localhost\r\n");
+        smtp_expect($socket, 250);
+
+        if ($transport === 'tls') {
+            fwrite($socket, "STARTTLS\r\n");
+            smtp_expect($socket, 220);
+            if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                throw new RuntimeException('Failed to enable STARTTLS.');
+            }
+            fwrite($socket, "EHLO localhost\r\n");
+            smtp_expect($socket, 250);
+        }
+
+        fwrite($socket, "AUTH LOGIN\r\n");
+        smtp_expect($socket, 334);
+        fwrite($socket, base64_encode(SMTP_USERNAME) . "\r\n");
+        smtp_expect($socket, 334);
+        fwrite($socket, base64_encode(SMTP_PASSWORD) . "\r\n");
+        smtp_expect($socket, 235);
+
+        fwrite($socket, "MAIL FROM:<" . MAIL_FROM_ADDRESS . ">\r\n");
+        smtp_expect($socket, 250);
+        fwrite($socket, "RCPT TO:<" . $toEmail . ">\r\n");
+        smtp_expect($socket, [250, 251]);
+        fwrite($socket, "DATA\r\n");
+        smtp_expect($socket, 354);
+
+        $boundary = 'b1_' . bin2hex(random_bytes(8));
+        $headers = [];
+        $headers[] = 'From: ' . MAIL_FROM_NAME . ' <' . MAIL_FROM_ADDRESS . '>';
+        $headers[] = 'To: ' . trim(($toName !== '' ? $toName . ' ' : '') . '<' . $toEmail . '>');
+        $headers[] = 'Subject: =?UTF-8?B?' . base64_encode($subject) . '?=';
+        $headers[] = 'MIME-Version: 1.0';
+        $headers[] = 'Date: ' . gmdate('D, d M Y H:i:s') . ' +0000';
+        $headers[] = 'Message-ID: <' . bin2hex(random_bytes(16)) . '@' . ($_SERVER['HTTP_HOST'] ?? 'lemelaniloans.local') . '>';
+
+        if ($htmlBody !== null && $htmlBody !== '') {
+            $headers[] = 'Content-Type: multipart/alternative; boundary="' . $boundary . '"';
+            $data = implode("\r\n", $headers) . "\r\n\r\n";
+            $data .= "--{$boundary}\r\n";
+            $data .= "Content-Type: text/plain; charset=UTF-8\r\n";
+            $data .= "Content-Transfer-Encoding: 8bit\r\n\r\n";
+            $data .= $textBody . "\r\n\r\n";
+            $data .= "--{$boundary}\r\n";
+            $data .= "Content-Type: text/html; charset=UTF-8\r\n";
+            $data .= "Content-Transfer-Encoding: 8bit\r\n\r\n";
+            $data .= $htmlBody . "\r\n\r\n";
+            $data .= "--{$boundary}--\r\n";
+        } else {
+            $headers[] = 'Content-Type: text/plain; charset=UTF-8';
+            $headers[] = 'Content-Transfer-Encoding: 8bit';
+            $data = implode("\r\n", $headers) . "\r\n\r\n" . $textBody . "\r\n";
+        }
+
+        // Dot-stuffing per RFC 5321.
+        $data = preg_replace('/(?m)^\./', '..', $data);
+        fwrite($socket, $data . "\r\n.\r\n");
+        smtp_expect($socket, 250);
+
+        fwrite($socket, "QUIT\r\n");
+    } finally {
+        fclose($socket);
+    }
+
+    return true;
+}
+
+function send_password_reset_email($toEmail, $toName, $resetUrl, $expiresAt) {
+    $subject = SITE_NAME . ' password reset request';
+    $displayName = trim((string)$toName) !== '' ? trim((string)$toName) : 'there';
+    $expiryText = date('d M Y H:i', strtotime($expiresAt));
+
+    $textBody = "Hello {$displayName},\n\n"
+        . "We received a request to reset your " . SITE_NAME . " account password.\n\n"
+        . "Use this link to reset your password:\n{$resetUrl}\n\n"
+        . "This link expires on {$expiryText}.\n"
+        . "If you did not request this, you can ignore this email.\n\n"
+        . "Security tip: never share your password reset link.\n\n"
+        . SITE_NAME;
+
+    $safeName = h($displayName);
+    $safeUrl = h($resetUrl);
+    $safeExpiry = h($expiryText);
+    $htmlBody = "<!DOCTYPE html><html><body style=\"font-family:Arial,sans-serif;background:#f6f8fb;padding:24px;\">"
+        . "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\"><tr><td align=\"center\">"
+        . "<table role=\"presentation\" width=\"600\" cellspacing=\"0\" cellpadding=\"0\" style=\"background:#ffffff;border-radius:8px;padding:24px;\">"
+        . "<tr><td>"
+        . "<h2 style=\"margin:0 0 16px;color:#121926;\">Reset your password</h2>"
+        . "<p style=\"margin:0 0 12px;color:#334155;\">Hello {$safeName},</p>"
+        . "<p style=\"margin:0 0 16px;color:#334155;\">We received a request to reset your " . h(SITE_NAME) . " account password.</p>"
+        . "<p style=\"margin:0 0 24px;\"><a href=\"{$safeUrl}\" style=\"background:#16a34a;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:6px;display:inline-block;\">Reset password</a></p>"
+        . "<p style=\"margin:0 0 12px;color:#334155;\">Or copy and paste this URL into your browser:</p>"
+        . "<p style=\"margin:0 0 16px;word-break:break-all;\"><a href=\"{$safeUrl}\">{$safeUrl}</a></p>"
+        . "<p style=\"margin:0 0 8px;color:#334155;\">This link expires on {$safeExpiry}.</p>"
+        . "<p style=\"margin:0;color:#64748b;font-size:13px;\">If you did not request this, you can ignore this email.</p>"
+        . "</td></tr></table></td></tr></table></body></html>";
+
+    return send_email_smtp($toEmail, (string)$toName, $subject, $textBody, $htmlBody);
 }
 
 function attempt_remember_me_login() {
