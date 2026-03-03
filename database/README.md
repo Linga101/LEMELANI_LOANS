@@ -30,6 +30,12 @@ This folder contains the integrated **Malawi loan lending** schema used by Lemel
    source c:/xampp/htdocs/LEMELANI_LOANS/database/migrations/20260303_enable_digital_account_channels.sql
    ```
 
+5. To enable real disbursement transaction logging/reconciliation tables:
+
+   ```sql
+   source c:/xampp/htdocs/LEMELANI_LOANS/database/migrations/20260303_add_disbursement_service_tables.sql
+   ```
+
 ## Main tables
 
 | Table | Purpose |

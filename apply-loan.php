@@ -557,6 +557,9 @@ $add_new_account = isset($_POST['add_new_account']) && $_POST['add_new_account']
 
                     <div style="margin-top: 2rem; text-align: left;">
                         <p><strong>Disbursement Date:</strong> <?php echo format_date($application_result['disbursement_date']); ?></p>
+                        <?php if (!empty($application_result['disbursement_reference'])): ?>
+                            <p><strong>Disbursement Ref:</strong> <?php echo htmlspecialchars($application_result['disbursement_reference']); ?></p>
+                        <?php endif; ?>
                         <p><strong>Due Date:</strong> <?php echo format_date($application_result['due_date']); ?></p>
                         <p class="text-secondary" style="font-size: 0.875rem;">
                             Funds will be disbursed to your account shortly. You can track your loan in the dashboard.

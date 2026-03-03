@@ -4,6 +4,7 @@
  * Handles loan applications (FIFO), disbursed loans, and scoring.
  * Uses Malawi schema: loan_applications -> loans (on approve/disburse).
  */
+require_once __DIR__ . '/DisbursementService.php';
 
 class Loan {
     private $conn;
@@ -574,6 +575,20 @@ class Loan {
 
                     $this->createRepaymentScheduleMalawi($loan_id, $total_repayable, $term_months, $due_date);
 
+                    $disbursementService = new DisbursementService($this->conn);
+                    $disbursement = $disbursementService->disburse([
+                        'loan_id' => $loan_id,
+                        'application_id' => $application_id,
+                        'user_id' => $user_id,
+                        'platform_account_id' => $platform_account_id,
+                        'customer_account_id' => $customer_account_id,
+                        'amount_mwk' => $approved_amount,
+                        'currency_code' => 'MWK',
+                    ]);
+                    if (!$disbursement['success']) {
+                        throw new Exception('Disbursement failed: ' . ($disbursement['message'] ?? 'Unknown error'));
+                    }
+
                     $upd = "UPDATE " . $this->table_applications . " SET status = 'approved', approved_amount_mwk = :amt, platform_account_id = :platform_account_id, reviewed_by = :reviewed_by, reviewed_at = NOW() WHERE id = :id";
                     $this->conn->prepare($upd)->execute([
                         ':amt' => $approved_amount,
@@ -587,7 +602,7 @@ class Loan {
                     $this->updateUserCreditScore($user_id, 10);
                     $this->logCreditEvent($user_id, 'loan_approved', $loan_id, $application_id, 'Loan approved with score: ' . $score);
                     $this->createNotification($user_id, 'approval', 'Loan Approved!',
-                        'Your loan application of ' . format_currency($approved_amount) . ' has been approved and disbursed.',
+                        'Your loan application of ' . format_currency($approved_amount) . ' has been approved and disbursed. Reference: ' . ($disbursement['transaction_reference'] ?? 'N/A'),
                         $loan_id);
 
                     $this->conn->commit();
@@ -598,6 +613,7 @@ class Loan {
                         'message' => 'Loan approved and disbursed.',
                         'loan_id' => $loan_id,
                         'disbursement_date' => date('Y-m-d'),
+                        'disbursement_reference' => $disbursement['transaction_reference'] ?? null,
                         'due_date' => $due_date,
                     ];
                 } catch (Exception $e) {
@@ -774,7 +790,14 @@ class Loan {
                          pa.account_type AS source_account_type,
                          pa.account_provider AS source_account_provider,
                          pa.account_name AS source_account_name,
-                         pa.account_number AS source_account_number
+                         pa.account_number AS source_account_number,
+                         (
+                            SELECT dt.gateway_transaction_reference
+                            FROM disbursement_transactions dt
+                            WHERE dt.loan_id = l.loan_id AND dt.status = 'success'
+                            ORDER BY dt.processed_at DESC, dt.tx_id DESC
+                            LIMIT 1
+                         ) AS disbursement_reference
                   FROM " . $this->table_loans . " l
                   JOIN users u ON l.user_id = u.user_id
                   LEFT JOIN " . $this->table_customer_accounts . " ca ON l.customer_account_id = ca.account_id

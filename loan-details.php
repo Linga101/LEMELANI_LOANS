@@ -245,6 +245,15 @@ $payments = $payment_stmt->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     <?php endif; ?>
 
+                    <?php if (!empty($loan_data['disbursement_reference'])): ?>
+                        <div class="detail-item">
+                            <span class="detail-label">Disbursement Ref</span>
+                            <span class="detail-value" style="font-size: 1rem;">
+                                <?php echo htmlspecialchars($loan_data['disbursement_reference']); ?>
+                            </span>
+                        </div>
+                    <?php endif; ?>
+
                     <?php if ($loan_data['due_date']): ?>
                         <div class="detail-item">
                             <span class="detail-label">Due Date</span>

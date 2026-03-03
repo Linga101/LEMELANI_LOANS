@@ -309,6 +309,67 @@ CREATE TABLE notifications (
 );
 
 -- ============================================================
+-- 12b. DISBURSEMENT TRANSACTIONS -- Outbound payout logs
+-- ============================================================
+CREATE TABLE disbursement_transactions (
+    tx_id                       BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    loan_id                     INT UNSIGNED NULL,
+    application_id              INT UNSIGNED NOT NULL,
+    user_id                     INT UNSIGNED NOT NULL,
+    platform_account_id         INT UNSIGNED NOT NULL,
+    customer_account_id         INT UNSIGNED NOT NULL,
+    gateway_channel             VARCHAR(50) NOT NULL,
+    amount_mwk                  DECIMAL(15,2) NOT NULL,
+    currency_code               CHAR(3) NOT NULL DEFAULT 'MWK',
+    external_reference          VARCHAR(100) NOT NULL,
+    gateway_transaction_reference VARCHAR(150),
+    status                      ENUM('pending','success','failed','reversed','reconciled') NOT NULL DEFAULT 'pending',
+    response_code               INT,
+    request_payload_json        JSON NULL,
+    response_payload_json       JSON NULL,
+    error_message               TEXT,
+    attempt_count               SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+    next_retry_at               DATETIME NULL,
+    processed_at                DATETIME NULL,
+    created_at                  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at                  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (loan_id) REFERENCES loans(loan_id) ON DELETE SET NULL,
+    FOREIGN KEY (application_id) REFERENCES loan_applications(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (platform_account_id) REFERENCES platform_accounts(account_id) ON DELETE RESTRICT,
+    FOREIGN KEY (customer_account_id) REFERENCES customer_accounts(account_id) ON DELETE RESTRICT,
+    UNIQUE KEY uq_external_reference (external_reference),
+    INDEX idx_disb_status (status, processed_at),
+    INDEX idx_disb_loan (loan_id),
+    INDEX idx_disb_application (application_id),
+    INDEX idx_disb_retry (status, next_retry_at)
+);
+
+-- ============================================================
+-- 12c. DISBURSEMENT RECONCILIATION -- Settlement checks
+-- ============================================================
+CREATE TABLE disbursement_reconciliation (
+    rec_id                       BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    reconciliation_date          DATE NOT NULL,
+    platform_account_id          INT UNSIGNED NOT NULL,
+    opening_balance_mwk          DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    total_disbursed_mwk          DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    total_failed_mwk             DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    closing_balance_mwk          DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    gateway_report_reference     VARCHAR(120),
+    status                       ENUM('pending','matched','mismatch','resolved') NOT NULL DEFAULT 'pending',
+    notes                        TEXT,
+    reconciled_by                INT UNSIGNED,
+    reconciled_at                DATETIME NULL,
+    created_at                   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at                   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (platform_account_id) REFERENCES platform_accounts(account_id) ON DELETE CASCADE,
+    FOREIGN KEY (reconciled_by) REFERENCES users(user_id) ON DELETE SET NULL,
+    UNIQUE KEY uq_daily_reconciliation (reconciliation_date, platform_account_id),
+    INDEX idx_recon_status (status, reconciliation_date)
+);
+
+-- ============================================================
 -- 13. AUDIT LOG — System events (Lemelani compat)
 -- ============================================================
 CREATE TABLE audit_log (
