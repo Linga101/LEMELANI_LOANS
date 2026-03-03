@@ -253,6 +253,24 @@ $payments = $payment_stmt->fetchAll(PDO::FETCH_ASSOC);
                             </span>
                         </div>
                     <?php endif; ?>
+
+                    <?php if (!empty($loan_data['payout_account_number'])): ?>
+                        <div class="detail-item">
+                            <span class="detail-label">Payout Account</span>
+                            <span class="detail-value" style="font-size: 1rem;">
+                                <?php echo htmlspecialchars(($loan_data['payout_account_provider'] ?? '') . ' - ' . ($loan_data['payout_account_name'] ?? '') . ' (' . $loan_data['payout_account_number'] . ')'); ?>
+                            </span>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (!empty($loan_data['source_account_number'])): ?>
+                        <div class="detail-item">
+                            <span class="detail-label">Disbursed From</span>
+                            <span class="detail-value" style="font-size: 1rem;">
+                                <?php echo htmlspecialchars(($loan_data['source_account_provider'] ?? '') . ' - ' . ($loan_data['source_account_name'] ?? '') . ' (' . $loan_data['source_account_number'] . ')'); ?>
+                            </span>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <?php if ($loan_data['loan_purpose']): ?>
