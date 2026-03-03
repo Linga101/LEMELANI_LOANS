@@ -629,9 +629,11 @@ components:
       type: object
       properties:
         fullName: { type: string }
+        nationalId: { type: string }
+        phone: { type: string }
         email: { type: string, format: email }
         password: { type: string, minLength: 8 }
-      required: [fullName, email, password]
+      required: [fullName, nationalId, phone, email, password]
     LoginRequest:
       type: object
       properties:
