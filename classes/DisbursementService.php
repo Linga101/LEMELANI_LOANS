@@ -188,7 +188,7 @@ class DisbursementService {
         $raw = curl_exec($ch);
         $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
-        curl_close($ch);
+        $ch = null;
 
         if ($raw === false || $curlError) {
             return ['success' => false, 'response_code' => $httpCode ?: null, 'message' => $curlError ?: 'HTTP transport error'];
