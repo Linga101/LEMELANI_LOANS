@@ -1,0 +1,728 @@
+openapi: 3.1.0
+info:
+  title: Lemelani Loans API
+  version: 1.0.0
+  description: >-
+    OpenAPI skeleton for incremental migration from PHP pages to API-backed
+    Next.js frontend.
+servers:
+  - url: /api/v1
+    description: Relative API base path
+tags:
+  - name: Auth
+  - name: Security
+  - name: Customer
+  - name: Customer Loans
+  - name: Customer Payments
+  - name: Customer Notifications
+  - name: Admin Dashboard
+  - name: Admin Loans
+  - name: Admin Users
+  - name: Admin Verifications
+  - name: Admin Payments
+  - name: Admin Settings
+  - name: Admin Platform Accounts
+  - name: Admin Reports
+security:
+  - SessionCookie: []
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new customer account
+      security: []
+      x-required-roles: [public]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Authenticate user and create session
+      security: []
+      x-required-roles: [public]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Logged in
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+              description: Session cookie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Destroy current session
+      x-required-roles: [user, admin, manager]
+      responses:
+        '200':
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /auth/password/forgot:
+    post:
+      tags: [Auth]
+      summary: Start password reset flow
+      security: []
+      x-required-roles: [public]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: Email queued if account exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /auth/password/reset:
+    post:
+      tags: [Auth]
+      summary: Complete password reset using selector and validator
+      security: []
+      x-required-roles: [public]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current authenticated user
+      x-required-roles: [user, admin, manager]
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseUser'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /security/csrf-token:
+    get:
+      tags: [Security]
+      summary: Get CSRF token for mutation requests during hybrid phase
+      x-required-roles: [public, user, admin, manager]
+      security: []
+      responses:
+        '200':
+          description: CSRF token issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseCsrf'
+  /customer/profile:
+    get:
+      tags: [Customer]
+      summary: Get customer profile
+      x-required-roles: [user]
+      responses:
+        '200':
+          description: Customer profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseProfile'
+    patch:
+      tags: [Customer]
+      summary: Update customer profile
+      security:
+        - SessionCookie: []
+        - CsrfHeader: []
+      x-required-roles: [user]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /customer/profile/password:
+    patch:
+      tags: [Customer]
+      summary: Change account password
+      security:
+        - SessionCookie: []
+        - CsrfHeader: []
+      x-required-roles: [user]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /customer/dashboard/summary:
+    get:
+      tags: [Customer]
+      summary: Customer dashboard summary data
+      x-required-roles: [user]
+      responses:
+        '200':
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseCustomerDashboard'
+  /customer/loans:
+    get:
+      tags: [Customer Loans]
+      summary: List loans for current user
+      x-required-roles: [user]
+      responses:
+        '200':
+          description: Loan list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseLoanList'
+  /customer/loans/{loanId}:
+    get:
+      tags: [Customer Loans]
+      summary: Get loan detail by ID
+      x-required-roles: [user]
+      parameters:
+        - $ref: '#/components/parameters/LoanId'
+      responses:
+        '200':
+          description: Loan detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseLoanDetail'
+        '404': { $ref: '#/components/responses/NotFound' }
+  /customer/loan-applications:
+    post:
+      tags: [Customer Loans]
+      summary: Submit new loan application
+      security:
+        - SessionCookie: []
+        - CsrfHeader: []
+      x-required-roles: [user]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLoanApplicationRequest'
+      responses:
+        '201':
+          description: Application created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseLoanApplication'
+  /customer/payout-accounts:
+    get:
+      tags: [Customer Loans]
+      summary: List customer payout accounts
+      x-required-roles: [user]
+      responses:
+        '200':
+          description: Payout account list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePayoutAccountList'
+  /customer/repayments:
+    post:
+      tags: [Customer Payments]
+      summary: Submit repayment for a loan
+      security:
+        - SessionCookie: []
+        - CsrfHeader: []
+      x-required-roles: [user]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRepaymentRequest'
+      responses:
+        '201':
+          description: Repayment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseRepayment'
+  /customer/payments/history:
+    get:
+      tags: [Customer Payments]
+      summary: List payment history for current user
+      x-required-roles: [user]
+      responses:
+        '200':
+          description: Payment history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseRepaymentList'
+  /customer/notifications:
+    get:
+      tags: [Customer Notifications]
+      summary: List notifications
+      x-required-roles: [user]
+      responses:
+        '200':
+          description: Notification list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseNotificationList'
+  /admin/dashboard/summary:
+    get:
+      tags: [Admin Dashboard]
+      summary: Admin KPI summary
+      x-required-roles: [admin, manager]
+      responses:
+        '200':
+          description: Admin summary metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAdminDashboard'
+  /admin/loan-applications/pending:
+    get:
+      tags: [Admin Loans]
+      summary: List pending applications in FIFO order
+      x-required-roles: [admin, manager]
+      responses:
+        '200':
+          description: Pending applications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseLoanApplicationList'
+  /admin/loan-applications/{id}/process:
+    post:
+      tags: [Admin Loans]
+      summary: Process loan application
+      security:
+        - SessionCookie: []
+        - CsrfHeader: []
+      x-required-roles: [admin, manager]
+      parameters:
+        - $ref: '#/components/parameters/ApplicationIdAsId'
+      responses:
+        '200':
+          description: Processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseLoanApplication'
+  /admin/loan-applications/{id}/reject:
+    post:
+      tags: [Admin Loans]
+      summary: Reject loan application
+      security:
+        - SessionCookie: []
+        - CsrfHeader: []
+      x-required-roles: [admin, manager]
+      parameters:
+        - $ref: '#/components/parameters/ApplicationIdAsId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectApplicationRequest'
+      responses:
+        '200':
+          description: Rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /admin/verifications/pending:
+    get:
+      tags: [Admin Verifications]
+      summary: List users pending KYC verification
+      x-required-roles: [admin, manager]
+      responses:
+        '200':
+          description: Pending verifications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseUserList'
+  /admin/users:
+    get:
+      tags: [Admin Users]
+      summary: List users with filters
+      x-required-roles: [admin, manager]
+      responses:
+        '200':
+          description: User list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseUserList'
+  /admin/settings:
+    get:
+      tags: [Admin Settings]
+      summary: Get system settings
+      x-required-roles: [admin]
+      responses:
+        '200':
+          description: Settings map
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseSettings'
+  /admin/reports/summary:
+    get:
+      tags: [Admin Reports]
+      summary: Aggregate platform report metrics
+      x-required-roles: [admin, manager]
+      responses:
+        '200':
+          description: Report summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAdminReportSummary'
+components:
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: PHPSESSID
+    CsrfHeader:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+  parameters:
+    LoanId:
+      name: loanId
+      in: path
+      required: true
+      schema: { type: integer }
+    ApplicationIdAsId:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer }
+  responses:
+    BadRequest:
+      description: Invalid request payload
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    Unauthorized:
+      description: Authentication required or invalid session
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  schemas:
+    SuccessEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, const: true }
+        data:
+          type: object
+          additionalProperties: true
+      required: [success]
+    ErrorEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, const: false }
+        error: { $ref: '#/components/schemas/ErrorDetail' }
+      required: [success, error]
+    ErrorDetail:
+      type: object
+      properties:
+        code: { type: string, example: VALIDATION_ERROR }
+        message: { type: string }
+        fields:
+          type: object
+          additionalProperties: { type: string }
+    AuthResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            user: { $ref: '#/components/schemas/User' }
+            csrfToken: { type: string }
+      required: [success]
+    ApiResponseUser:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            user: { $ref: '#/components/schemas/User' }
+      required: [success, data]
+    ApiResponseUserList:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/User' }
+    ApiResponseCsrf:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            token: { type: string }
+    ApiResponseProfile:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            profile: { $ref: '#/components/schemas/Profile' }
+    ApiResponseCustomerDashboard:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: { type: object, additionalProperties: true }
+    ApiResponseLoanList:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/Loan' }
+    ApiResponseLoanDetail:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: { type: object, additionalProperties: true }
+    ApiResponseLoanApplication:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            application: { $ref: '#/components/schemas/LoanApplication' }
+    ApiResponseLoanApplicationList:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/LoanApplication' }
+    ApiResponsePayoutAccountList:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/PayoutAccount' }
+    ApiResponseRepayment:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            repayment: { $ref: '#/components/schemas/Repayment' }
+    ApiResponseRepaymentList:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/Repayment' }
+    ApiResponseNotificationList:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/Notification' }
+    ApiResponseAdminDashboard:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: { type: object, additionalProperties: true }
+    ApiResponseSettings:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: { type: object, additionalProperties: true }
+    ApiResponseAdminReportSummary:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: { type: object, additionalProperties: true }
+    RegisterRequest:
+      type: object
+      properties:
+        fullName: { type: string }
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8 }
+      required: [fullName, email, password]
+    LoginRequest:
+      type: object
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+      required: [email, password]
+    ForgotPasswordRequest:
+      type: object
+      properties:
+        email: { type: string, format: email }
+      required: [email]
+    ResetPasswordRequest:
+      type: object
+      properties:
+        selector: { type: string }
+        validator: { type: string }
+        newPassword: { type: string, minLength: 8 }
+      required: [selector, validator, newPassword]
+    UpdateProfileRequest:
+      type: object
+      additionalProperties: true
+    ChangePasswordRequest:
+      type: object
+      properties:
+        currentPassword: { type: string }
+        newPassword: { type: string, minLength: 8 }
+      required: [currentPassword, newPassword]
+    CreateLoanApplicationRequest:
+      type: object
+      properties:
+        loanAmount: { type: number }
+        loanPurpose: { type: string }
+        customerAccountId: { type: integer }
+      required: [loanAmount, loanPurpose, customerAccountId]
+    CreateRepaymentRequest:
+      type: object
+      properties:
+        loanId: { type: integer }
+        amountPaidMwk: { type: number }
+        paymentMethod: { type: string }
+      required: [loanId, amountPaidMwk, paymentMethod]
+    RejectApplicationRequest:
+      type: object
+      properties:
+        rejectionReason: { type: string }
+      required: [rejectionReason]
+    User:
+      type: object
+      properties:
+        userId: { type: integer }
+        fullName: { type: string }
+        email: { type: string, format: email }
+        role: { type: string }
+        verificationStatus: { type: string }
+        accountStatus: { type: string }
+        creditScore: { type: integer }
+    Profile:
+      type: object
+      additionalProperties: true
+    Loan:
+      type: object
+      properties:
+        loanId: { type: integer }
+        principalMwk: { type: number }
+        status: { type: string }
+    LoanApplication:
+      type: object
+      properties:
+        applicationId: { type: integer }
+        userId: { type: integer }
+        requestedAmountMwk: { type: number }
+        status: { type: string }
+    PayoutAccount:
+      type: object
+      properties:
+        accountId: { type: integer }
+        accountType: { type: string }
+        accountName: { type: string }
+    Repayment:
+      type: object
+      properties:
+        repaymentId: { type: integer }
+        loanId: { type: integer }
+        amountPaidMwk: { type: number }
+        paymentMethod: { type: string }
+        paymentStatus: { type: string }
+    Notification:
+      type: object
+      properties:
+        notificationId: { type: integer }
+        notificationType: { type: string }
+        title: { type: string }
+        message: { type: string }
+        isRead: { type: boolean }
