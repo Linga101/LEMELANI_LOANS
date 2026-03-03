@@ -880,16 +880,16 @@ i.fas, i.far, i.fal, i.fab {
 
 /* Liquid Glass v2 - stronger final overrides */
 :root {
-    --primary-green: #d8f0ff;
-    --primary-dark-green: #9db8ff;
-    --dark-bg: #0f1026;
-    --dark-card: rgba(34, 30, 72, 0.5);
-    --dark-card-hover: rgba(46, 38, 96, 0.62);
-    --accent-lime: #ffffff;
-    --text-primary: #f7f7ff;
-    --text-secondary: #cbc9e9;
-    --text-muted: #a39fc9;
-    --border-color: rgba(211, 217, 255, 0.24);
+    --primary-green: #10b981;
+    --primary-dark-green: #059669;
+    --dark-bg: #061210;
+    --dark-card: rgba(16, 32, 28, 0.54);
+    --dark-card-hover: rgba(20, 40, 34, 0.66);
+    --accent-lime: #d4ff00;
+    --text-primary: #f4fff9;
+    --text-secondary: #b5d1c6;
+    --text-muted: #87a69a;
+    --border-color: rgba(139, 189, 167, 0.28);
     --success: #7dffe0;
     --warning: #ffd58e;
     --error: #ff8fb3;
@@ -898,32 +898,32 @@ i.fas, i.far, i.fal, i.fab {
 
 body {
     background-image:
-        radial-gradient(circle at 8% 22%, rgba(187, 156, 255, 0.28) 0, transparent 42%),
-        radial-gradient(circle at 88% 14%, rgba(144, 126, 255, 0.22) 0, transparent 35%),
-        radial-gradient(circle at 72% 78%, rgba(115, 176, 255, 0.2) 0, transparent 38%),
-        linear-gradient(160deg, #0e1128 0%, #17163a 44%, #131230 100%) !important;
+        radial-gradient(circle at 8% 22%, rgba(16, 185, 129, 0.26) 0, transparent 42%),
+        radial-gradient(circle at 88% 14%, rgba(10, 153, 109, 0.22) 0, transparent 35%),
+        radial-gradient(circle at 72% 78%, rgba(59, 130, 246, 0.16) 0, transparent 38%),
+        linear-gradient(160deg, #05110f 0%, #08201a 44%, #061710 100%) !important;
 }
 
 .gradient-overlay {
     background:
-        radial-gradient(circle at 20% 50%, rgba(181, 154, 255, 0.14) 0%, transparent 52%),
-        radial-gradient(circle at 80% 80%, rgba(159, 179, 255, 0.14) 0%, transparent 56%),
+        radial-gradient(circle at 20% 50%, rgba(16, 185, 129, 0.15) 0%, transparent 52%),
+        radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.12) 0%, transparent 56%),
         linear-gradient(120deg, rgba(255, 255, 255, 0.03), transparent 44%) !important;
 }
 
 .navbar {
-    background: rgba(29, 27, 60, 0.66) !important;
-    border-bottom: 1px solid rgba(224, 225, 255, 0.26) !important;
-    box-shadow: 0 18px 40px rgba(8, 7, 22, 0.42) !important;
+    background: rgba(12, 28, 23, 0.68) !important;
+    border-bottom: 1px solid rgba(141, 196, 172, 0.28) !important;
+    box-shadow: 0 18px 40px rgba(3, 12, 9, 0.42) !important;
 }
 
 .navbar-menu {
-    background: linear-gradient(120deg, rgba(233, 230, 255, 0.2), rgba(197, 191, 246, 0.11)) !important;
-    border: 1px solid rgba(232, 233, 255, 0.32) !important;
+    background: linear-gradient(120deg, rgba(206, 255, 236, 0.12), rgba(130, 201, 168, 0.08)) !important;
+    border: 1px solid rgba(172, 220, 198, 0.28) !important;
 }
 
 .navbar-menu a:not(.btn) {
-    color: #e8e6ff !important;
+    color: #e4fff3 !important;
 }
 
 .navbar-menu a:not(.btn):hover,
@@ -934,46 +934,46 @@ body {
 }
 
 .sidebar {
-    background: linear-gradient(175deg, rgba(27, 24, 58, 0.88), rgba(20, 20, 46, 0.8)) !important;
-    border-right: 1px solid rgba(224, 225, 255, 0.2) !important;
-    box-shadow: 18px 0 48px rgba(6, 5, 18, 0.46) !important;
+    background: linear-gradient(175deg, rgba(10, 25, 21, 0.9), rgba(8, 20, 17, 0.82)) !important;
+    border-right: 1px solid rgba(147, 204, 180, 0.24) !important;
+    box-shadow: 18px 0 48px rgba(2, 8, 6, 0.46) !important;
 }
 
 .sidebar-brand {
     padding: 0.6rem 0.75rem !important;
     border-radius: 14px;
-    background: linear-gradient(120deg, rgba(224, 219, 255, 0.15), rgba(224, 219, 255, 0.05));
-    border: 1px solid rgba(218, 221, 255, 0.24);
+    background: linear-gradient(120deg, rgba(201, 255, 232, 0.14), rgba(201, 255, 232, 0.05));
+    border: 1px solid rgba(165, 220, 194, 0.26);
 }
 
 .sidebar-menu a {
     border-radius: 14px !important;
-    color: #d8d6f3 !important;
+    color: #d5f3e7 !important;
 }
 
 .sidebar-menu a:hover,
 .sidebar-menu a.active {
-    background: linear-gradient(120deg, rgba(227, 223, 255, 0.2), rgba(162, 150, 245, 0.12)) !important;
-    border-color: rgba(224, 226, 255, 0.34) !important;
+    background: linear-gradient(120deg, rgba(183, 247, 220, 0.18), rgba(70, 170, 124, 0.14)) !important;
+    border-color: rgba(161, 220, 191, 0.36) !important;
     color: #ffffff !important;
 }
 
 .sidebar-menu a i {
-    background: linear-gradient(140deg, rgba(211, 211, 255, 0.25), rgba(165, 168, 238, 0.2)) !important;
-    border-color: rgba(225, 228, 255, 0.42) !important;
-    color: #f8f7ff !important;
+    background: linear-gradient(140deg, rgba(166, 233, 200, 0.24), rgba(84, 173, 130, 0.2)) !important;
+    border-color: rgba(163, 225, 193, 0.38) !important;
+    color: #ecfff7 !important;
 }
 
 .sidebar-menu a:hover i,
 .sidebar-menu a.active i {
-    background: linear-gradient(140deg, rgba(255, 255, 255, 0.33), rgba(201, 193, 255, 0.28)) !important;
-    border-color: rgba(255, 255, 255, 0.62) !important;
-    color: #271f53 !important;
+    background: linear-gradient(140deg, rgba(228, 255, 242, 0.32), rgba(123, 231, 186, 0.28)) !important;
+    border-color: rgba(228, 255, 242, 0.62) !important;
+    color: #083525 !important;
 }
 
 .sidebar-toggle {
-    background: rgba(45, 40, 88, 0.9) !important;
-    border-color: rgba(226, 229, 255, 0.36) !important;
+    background: rgba(18, 48, 38, 0.9) !important;
+    border-color: rgba(166, 224, 194, 0.36) !important;
 }
 
 .card,
@@ -981,8 +981,8 @@ body {
 .table-wrapper,
 .admin-header,
 .metric-card {
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02)) border-box, rgba(33, 30, 69, 0.56) !important;
-    border: 1px solid rgba(219, 221, 255, 0.24) !important;
+    background: linear-gradient(145deg, rgba(237, 255, 245, 0.08), rgba(237, 255, 245, 0.02)) border-box, rgba(15, 33, 27, 0.56) !important;
+    border: 1px solid rgba(156, 211, 185, 0.24) !important;
 }
 
 /* Hide scrollbars globally for dashboard/page and sidebar containers */
