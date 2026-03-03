@@ -74,6 +74,9 @@ paths:
     post:
       tags: [Auth]
       summary: Destroy current session
+      security:
+        - SessionCookie: []
+        - CsrfHeader: []
       x-required-roles: [user, admin, manager]
       responses:
         '200':
@@ -317,6 +320,75 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponseNotificationList'
+  /customer/notifications/{notificationId}/read:
+    post:
+      tags: [Customer Notifications]
+      summary: Mark a notification as read
+      security:
+        - SessionCookie: []
+        - CsrfHeader: []
+      x-required-roles: [user]
+      parameters:
+        - $ref: '#/components/parameters/NotificationId'
+      responses:
+        '200':
+          description: Marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /customer/notifications/read-all:
+    post:
+      tags: [Customer Notifications]
+      summary: Mark all notifications as read
+      security:
+        - SessionCookie: []
+        - CsrfHeader: []
+      x-required-roles: [user]
+      responses:
+        '200':
+          description: Notifications updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /customer/notifications/{notificationId}:
+    delete:
+      tags: [Customer Notifications]
+      summary: Delete a notification
+      security:
+        - SessionCookie: []
+        - CsrfHeader: []
+      x-required-roles: [user]
+      parameters:
+        - $ref: '#/components/parameters/NotificationId'
+      responses:
+        '200':
+          description: Notification deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /customer/documents/{type}:
+    get:
+      tags: [Customer Notifications]
+      summary: Retrieve a protected document (selfie or national_id)
+      x-required-roles: [user, admin, manager]
+      parameters:
+        - $ref: '#/components/parameters/DocumentType'
+        - name: userId
+          in: query
+          required: false
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Binary document stream
+          content:
+            image/jpeg: { schema: { type: string, format: binary } }
+            image/png: { schema: { type: string, format: binary } }
+            application/pdf: { schema: { type: string, format: binary } }
+        '403': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /admin/dashboard/summary:
     get:
       tags: [Admin Dashboard]
@@ -445,6 +517,18 @@ components:
       in: path
       required: true
       schema: { type: integer }
+    NotificationId:
+      name: notificationId
+      in: path
+      required: true
+      schema: { type: integer }
+    DocumentType:
+      name: type
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [selfie, national_id]
     ApplicationIdAsId:
       name: id
       in: path

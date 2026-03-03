@@ -244,6 +244,40 @@ function asset_url($path) {
     return $url;
 }
 
+/**
+ * Feature flag helper.
+ * Reads flags from environment variables using FF_<FLAG_NAME>=1|true|yes|on.
+ */
+function feature_enabled($flagName, $default = false) {
+    $key = 'FF_' . strtoupper(preg_replace('/[^A-Z0-9_]/i', '_', (string)$flagName));
+    $raw = getenv($key);
+    if ($raw === false) {
+        return (bool)$default;
+    }
+
+    $value = strtolower(trim((string)$raw));
+    if (in_array($value, ['1', 'true', 'yes', 'on'], true)) {
+        return true;
+    }
+    if (in_array($value, ['0', 'false', 'no', 'off'], true)) {
+        return false;
+    }
+    return (bool)$default;
+}
+
+/**
+ * Build Next.js URL for hybrid rollout.
+ * Uses NEXTJS_BASE_URL (example: http://localhost:3000).
+ */
+function nextjs_url($path = '') {
+    $base = rtrim((string)(getenv('NEXTJS_BASE_URL') ?: ''), '/');
+    if ($base === '') {
+        return '';
+    }
+    $path = ltrim((string)$path, '/');
+    return $path === '' ? $base : ($base . '/' . $path);
+}
+
 function is_logged_in() {
     return isset($_SESSION['user_id']) && isset($_SESSION['user_role']);
 }
