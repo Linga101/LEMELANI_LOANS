@@ -29,6 +29,31 @@ class Loan {
         $this->conn = $db;
     }
 
+    private function getSupportedCustomerAccountTypes() {
+        return ['airtel_money', 'tnm_mpamba', 'sticpay', 'mastercard', 'visa', 'binance', 'bank_transfer', 'bank_account', 'mobile_money', 'wallet'];
+    }
+
+    private function getSupportedPlatformAccountTypes() {
+        return ['airtel_money', 'tnm_mpamba', 'sticpay', 'mastercard', 'visa', 'binance', 'bank_transfer', 'bank_account', 'mobile_money', 'wallet', 'escrow'];
+    }
+
+    private function providerLabelFromAccountType($account_type) {
+        return match ($account_type) {
+            'airtel_money' => 'Airtel Money',
+            'tnm_mpamba' => 'TNM Mpamba',
+            'sticpay' => 'Sticpay',
+            'mastercard' => 'Mastercard',
+            'visa' => 'Visa',
+            'binance' => 'Binance',
+            'bank_transfer' => 'Bank Transfer',
+            'bank_account' => 'Bank Account',
+            'mobile_money' => 'Mobile Money',
+            'wallet' => 'Wallet',
+            'escrow' => 'Escrow',
+            default => '',
+        };
+    }
+
     /**
      * Get customer's payout accounts (bank/mobile wallet).
      */
@@ -58,9 +83,12 @@ class Loan {
         $swift_code = strtoupper(trim((string)($data['swift_code'] ?? '')));
         $set_default = !empty($data['set_default']) ? 1 : 0;
 
-        $allowed_types = ['bank_account', 'mobile_money', 'wallet'];
+        $allowed_types = $this->getSupportedCustomerAccountTypes();
         if (!in_array($account_type, $allowed_types, true)) {
             return ['success' => false, 'message' => 'Invalid account type'];
+        }
+        if ($account_provider === '') {
+            $account_provider = $this->providerLabelFromAccountType($account_type);
         }
         if ($account_provider === '' || $account_name === '' || $account_number === '') {
             return ['success' => false, 'message' => 'Account provider, name, and number are required'];
@@ -158,9 +186,12 @@ class Loan {
         $is_default = !empty($data['is_default']) ? 1 : 0;
         $is_active = !empty($data['is_active']) ? 1 : 0;
 
-        $allowed_types = ['bank_account', 'mobile_money', 'wallet', 'escrow'];
+        $allowed_types = $this->getSupportedPlatformAccountTypes();
         if (!in_array($account_type, $allowed_types, true)) {
             return ['success' => false, 'message' => 'Invalid account type'];
+        }
+        if ($account_provider === '') {
+            $account_provider = $this->providerLabelFromAccountType($account_type);
         }
         if ($account_provider === '' || $account_name === '' || $account_number === '') {
             return ['success' => false, 'message' => 'Provider, account name, and account number are required'];

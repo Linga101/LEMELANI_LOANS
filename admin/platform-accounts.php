@@ -182,16 +182,29 @@ foreach ($active_accounts as $acc) {
                     <div class="settings-grid">
                         <div class="form-group">
                             <label class="form-label">Account Type *</label>
-                            <select name="account_type" class="form-control" required>
-                                <option value="bank_account">Bank Account</option>
-                                <option value="mobile_money">Mobile Money</option>
-                                <option value="wallet">Wallet</option>
+                            <select name="account_type" id="account_type" class="form-control" required>
+                                <option value="airtel_money">Airtel Money</option>
+                                <option value="tnm_mpamba">TNM Mpamba</option>
+                                <option value="sticpay">Sticpay</option>
+                                <option value="mastercard">Mastercard</option>
+                                <option value="visa">Visa</option>
+                                <option value="binance">Binance</option>
+                                <option value="bank_transfer">Bank Transfer</option>
                                 <option value="escrow">Escrow</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Provider *</label>
-                            <input type="text" name="account_provider" class="form-control" required>
+                            <select name="account_provider" id="account_provider" class="form-control" required>
+                                <option value="Airtel Money">Airtel Money</option>
+                                <option value="TNM Mpamba">TNM Mpamba</option>
+                                <option value="Sticpay">Sticpay</option>
+                                <option value="Mastercard">Mastercard</option>
+                                <option value="Visa">Visa</option>
+                                <option value="Binance">Binance</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                                <option value="Escrow">Escrow</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Account Name *</label>
@@ -293,6 +306,27 @@ foreach ($active_accounts as $acc) {
             </div>
         </div>
     </div>
+    <script>
+        const accountTypeEl = document.getElementById('account_type');
+        const accountProviderEl = document.getElementById('account_provider');
+        const providerMap = {
+            airtel_money: 'Airtel Money',
+            tnm_mpamba: 'TNM Mpamba',
+            sticpay: 'Sticpay',
+            mastercard: 'Mastercard',
+            visa: 'Visa',
+            binance: 'Binance',
+            bank_transfer: 'Bank Transfer',
+            escrow: 'Escrow'
+        };
+
+        accountTypeEl?.addEventListener('change', function() {
+            const provider = providerMap[this.value];
+            if (provider && accountProviderEl) {
+                accountProviderEl.value = provider;
+            }
+        });
+    </script>
     <script src="../assets/js/sidebar.js"></script>
 </body>
 </html>

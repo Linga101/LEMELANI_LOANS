@@ -24,6 +24,12 @@ This folder contains the integrated **Malawi loan lending** schema used by Lemel
    source c:/xampp/htdocs/LEMELANI_LOANS/database/migrations/20260302_add_disbursement_accounts.sql
    ```
 
+4. To enable digital account channels (Airtel Money, TNM Mpamba, Sticpay, Mastercard, Visa, Binance):
+
+   ```sql
+   source c:/xampp/htdocs/LEMELANI_LOANS/database/migrations/20260303_enable_digital_account_channels.sql
+   ```
+
 ## Main tables
 
 | Table | Purpose |

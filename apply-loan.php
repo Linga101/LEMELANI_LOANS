@@ -474,17 +474,26 @@ $add_new_account = isset($_POST['add_new_account']) && $_POST['add_new_account']
                                 <div class="form-group">
                                     <label for="account_type" class="form-label">Account Type *</label>
                                     <select id="account_type" name="account_type" class="form-control" <?php echo $user_data['verification_status'] !== 'verified' ? 'disabled' : ''; ?>>
-                                        <option value="bank_account">Bank Account</option>
-                                        <option value="mobile_money">Mobile Money</option>
-                                        <option value="wallet">Digital Wallet</option>
+                                        <option value="airtel_money" <?php echo (($_POST['account_type'] ?? '') === 'airtel_money') ? 'selected' : ''; ?>>Airtel Money</option>
+                                        <option value="tnm_mpamba" <?php echo (($_POST['account_type'] ?? '') === 'tnm_mpamba') ? 'selected' : ''; ?>>TNM Mpamba</option>
+                                        <option value="sticpay" <?php echo (($_POST['account_type'] ?? '') === 'sticpay') ? 'selected' : ''; ?>>Sticpay</option>
+                                        <option value="mastercard" <?php echo (($_POST['account_type'] ?? '') === 'mastercard') ? 'selected' : ''; ?>>Mastercard</option>
+                                        <option value="visa" <?php echo (($_POST['account_type'] ?? '') === 'visa') ? 'selected' : ''; ?>>Visa</option>
+                                        <option value="binance" <?php echo (($_POST['account_type'] ?? '') === 'binance') ? 'selected' : ''; ?>>Binance</option>
+                                        <option value="bank_transfer" <?php echo (($_POST['account_type'] ?? '') === 'bank_transfer') ? 'selected' : ''; ?>>Bank Transfer</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label for="account_provider" class="form-label">Provider / Bank *</label>
-                                    <input type="text" id="account_provider" name="account_provider" class="form-control"
-                                           value="<?php echo htmlspecialchars($_POST['account_provider'] ?? ''); ?>"
-                                           placeholder="e.g. National Bank, Airtel Money"
-                                           <?php echo $user_data['verification_status'] !== 'verified' ? 'disabled' : ''; ?>>
+                                    <label for="account_provider" class="form-label">Provider *</label>
+                                    <select id="account_provider" name="account_provider" class="form-control" <?php echo $user_data['verification_status'] !== 'verified' ? 'disabled' : ''; ?>>
+                                        <option value="Airtel Money" <?php echo (($_POST['account_provider'] ?? '') === 'Airtel Money') ? 'selected' : ''; ?>>Airtel Money</option>
+                                        <option value="TNM Mpamba" <?php echo (($_POST['account_provider'] ?? '') === 'TNM Mpamba') ? 'selected' : ''; ?>>TNM Mpamba</option>
+                                        <option value="Sticpay" <?php echo (($_POST['account_provider'] ?? '') === 'Sticpay') ? 'selected' : ''; ?>>Sticpay</option>
+                                        <option value="Mastercard" <?php echo (($_POST['account_provider'] ?? '') === 'Mastercard') ? 'selected' : ''; ?>>Mastercard</option>
+                                        <option value="Visa" <?php echo (($_POST['account_provider'] ?? '') === 'Visa') ? 'selected' : ''; ?>>Visa</option>
+                                        <option value="Binance" <?php echo (($_POST['account_provider'] ?? '') === 'Binance') ? 'selected' : ''; ?>>Binance</option>
+                                        <option value="Bank Transfer" <?php echo (($_POST['account_provider'] ?? '') === 'Bank Transfer') ? 'selected' : ''; ?>>Bank Transfer</option>
+                                    </select>
                                 </div>
                                 <div class="form-group">
                                     <label for="account_name" class="form-label">Account Name *</label>
@@ -594,6 +603,17 @@ $add_new_account = isset($_POST['add_new_account']) && $_POST['add_new_account']
         const addAccountCheckbox = document.getElementById('add_new_account');
         const newAccountFields = document.getElementById('newAccountFields');
         const accountSelect = document.getElementById('customer_account_id');
+        const accountTypeSelect = document.getElementById('account_type');
+        const accountProviderSelect = document.getElementById('account_provider');
+        const providerMap = {
+            airtel_money: 'Airtel Money',
+            tnm_mpamba: 'TNM Mpamba',
+            sticpay: 'Sticpay',
+            mastercard: 'Mastercard',
+            visa: 'Visa',
+            binance: 'Binance',
+            bank_transfer: 'Bank Transfer'
+        };
 
         function updateLoanDisplay() {
             const amount = parseInt(slider.value);
@@ -612,6 +632,15 @@ $add_new_account = isset($_POST['add_new_account']) && $_POST['add_new_account']
                 newAccountFields.style.display = this.checked ? '' : 'none';
                 if (accountSelect && this.checked) {
                     accountSelect.value = '';
+                }
+            });
+        }
+
+        if (accountTypeSelect && accountProviderSelect) {
+            accountTypeSelect.addEventListener('change', function() {
+                const suggested = providerMap[this.value];
+                if (suggested) {
+                    accountProviderSelect.value = suggested;
                 }
             });
         }

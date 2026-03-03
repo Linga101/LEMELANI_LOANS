@@ -3,7 +3,7 @@ USE lemelani_loans;
 CREATE TABLE IF NOT EXISTS customer_accounts (
     account_id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id             INT UNSIGNED NOT NULL,
-    account_type        ENUM('bank_account','mobile_money','wallet') NOT NULL DEFAULT 'bank_account',
+    account_type        ENUM('airtel_money','tnm_mpamba','sticpay','mastercard','visa','binance','bank_transfer','bank_account','mobile_money','wallet') NOT NULL DEFAULT 'airtel_money',
     account_provider    VARCHAR(100) NOT NULL,
     account_name        VARCHAR(150) NOT NULL,
     account_number      VARCHAR(40) NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS customer_accounts (
 
 CREATE TABLE IF NOT EXISTS platform_accounts (
     account_id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    account_type        ENUM('bank_account','mobile_money','wallet','escrow') NOT NULL DEFAULT 'bank_account',
+    account_type        ENUM('airtel_money','tnm_mpamba','sticpay','mastercard','visa','binance','bank_transfer','bank_account','mobile_money','wallet','escrow') NOT NULL DEFAULT 'airtel_money',
     account_provider    VARCHAR(100) NOT NULL,
     account_name        VARCHAR(150) NOT NULL,
     account_number      VARCHAR(40) NOT NULL,
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS platform_accounts (
 );
 
 INSERT INTO platform_accounts (account_type, account_provider, account_name, account_number, currency_code, current_balance_mwk, is_default, is_active)
-SELECT 'bank_account', 'National Bank of Malawi', 'Lemelani Loans Treasury', 'LML-TREASURY-001', 'MWK', 0.00, 1, 1
+SELECT 'bank_transfer', 'National Bank of Malawi', 'Lemelani Loans Treasury', 'LML-TREASURY-001', 'MWK', 0.00, 1, 1
 WHERE NOT EXISTS (
     SELECT 1 FROM platform_accounts WHERE account_number = 'LML-TREASURY-001'
 );
