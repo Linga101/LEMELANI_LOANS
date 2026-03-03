@@ -119,9 +119,9 @@ $active_users = count($user->getAllUsers(['role' => 'customer', 'account_status'
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Management - <?php echo SITE_NAME; ?></title>
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo asset_url('assets/css/style.css'); ?>">
     <!-- FontAwesome icons -->
-    <link rel="stylesheet" href="../assets/css/fontawesome-all.min.css" />
+    <link rel="stylesheet" href="<?php echo asset_url('assets/css/fontawesome-all.min.css'); ?>" />
     <style>
         .filter-bar {
             background: var(--dark-card);
@@ -492,6 +492,6 @@ $active_users = count($user->getAllUsers(['role' => 'customer', 'account_status'
             }
         });
     </script>
-    <script src="../assets/js/sidebar.js"></script>
+    <script src="<?php echo asset_url('assets/js/sidebar.js'); ?>"></script>
 </body>
 </html>

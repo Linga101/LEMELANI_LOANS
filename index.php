@@ -12,9 +12,9 @@ if (is_logged_in()) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo SITE_NAME; ?> - <?php echo SITE_TAGLINE; ?></title>
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo asset_url('assets/css/style.css'); ?>">
     <!-- FontAwesome icons -->
-    <link rel="stylesheet" href="assets/css/fontawesome-all.min.css" />
+    <link rel="stylesheet" href="<?php echo asset_url('assets/css/fontawesome-all.min.css'); ?>" />
     <style>
         /* Landing page specific styles */
         .scroll-progress {
@@ -23,9 +23,9 @@ if (is_logged_in()) {
             left: 0;
             height: 3px;
             width: 0%;
-            background: linear-gradient(90deg, #d4ff00 0%, #10b981 100%);
+            background: linear-gradient(90deg, #f8f7ff 0%, #b9adff 100%);
             z-index: 2000;
-            box-shadow: 0 0 12px rgba(16, 185, 129, 0.7);
+            box-shadow: 0 0 12px rgba(185, 173, 255, 0.7);
         }
 
         .hero-section {
@@ -66,7 +66,7 @@ if (is_logged_in()) {
             height: 360px;
             left: -5%;
             top: 5%;
-            background: radial-gradient(circle, rgba(16, 185, 129, 0.45) 0%, rgba(16, 185, 129, 0.02) 70%);
+            background: radial-gradient(circle, rgba(181, 154, 255, 0.5) 0%, rgba(181, 154, 255, 0.02) 72%);
         }
 
         .aurora-blob.blob-two {
@@ -75,7 +75,7 @@ if (is_logged_in()) {
             right: -8%;
             bottom: -10%;
             animation-duration: 20s;
-            background: radial-gradient(circle, rgba(212, 255, 0, 0.3) 0%, rgba(212, 255, 0, 0.03) 70%);
+            background: radial-gradient(circle, rgba(154, 207, 255, 0.34) 0%, rgba(154, 207, 255, 0.03) 70%);
         }
 
         .aurora-blob.blob-three {
@@ -85,7 +85,7 @@ if (is_logged_in()) {
             top: 18%;
             animation-duration: 18s;
             animation-delay: 1s;
-            background: radial-gradient(circle, rgba(59, 130, 246, 0.24) 0%, rgba(59, 130, 246, 0.02) 70%);
+            background: radial-gradient(circle, rgba(172, 145, 255, 0.3) 0%, rgba(172, 145, 255, 0.02) 70%);
         }
 
         .hero-content {
@@ -102,7 +102,7 @@ if (is_logged_in()) {
             font-size: 3.5rem;
             line-height: 1.1;
             margin-bottom: 1.5rem;
-            background: linear-gradient(135deg, #ffffff 0%, #10b981 100%);
+            background: linear-gradient(135deg, #ffffff 0%, #bcb2ff 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -128,11 +128,11 @@ if (is_logged_in()) {
             aspect-ratio: 1 / 1;
             border-radius: 50%;
             z-index: 1;
-            border: 1px solid rgba(212, 255, 0, 0.25);
+            border: 1px solid rgba(215, 222, 255, 0.28);
             background:
-                radial-gradient(circle at center, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.04) 55%, rgba(16, 185, 129, 0.01) 75%),
+                radial-gradient(circle at center, rgba(165, 147, 255, 0.26) 0%, rgba(165, 147, 255, 0.06) 55%, rgba(165, 147, 255, 0.01) 75%),
                 linear-gradient(140deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0));
-            box-shadow: inset 0 0 80px rgba(16, 185, 129, 0.2), 0 0 80px rgba(16, 185, 129, 0.2);
+            box-shadow: inset 0 0 80px rgba(165, 147, 255, 0.24), 0 0 80px rgba(165, 147, 255, 0.18);
             overflow: hidden;
         }
 
@@ -149,7 +149,7 @@ if (is_logged_in()) {
         .hero-visual::after {
             inset: 26%;
             border-style: solid;
-            border-color: rgba(212, 255, 0, 0.35);
+            border-color: rgba(199, 190, 255, 0.4);
             animation-duration: 16s;
             animation-direction: reverse;
         }
@@ -161,8 +161,8 @@ if (is_logged_in()) {
             border-radius: 50%;
             left: 37%;
             top: 37%;
-            background: radial-gradient(circle, rgba(212, 255, 0, 0.8) 0%, rgba(16, 185, 129, 0.45) 60%, rgba(16, 185, 129, 0) 100%);
-            box-shadow: 0 0 30px rgba(212, 255, 0, 0.55);
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(184, 169, 255, 0.5) 60%, rgba(184, 169, 255, 0) 100%);
+            box-shadow: 0 0 30px rgba(199, 190, 255, 0.55);
         }
 
         .feature-grid {
@@ -182,8 +182,8 @@ if (is_logged_in()) {
             content: "";
             position: absolute;
             inset: 10% -20%;
-            background: radial-gradient(circle at 20% 40%, rgba(16, 185, 129, 0.1), transparent 50%),
-                        radial-gradient(circle at 80% 70%, rgba(59, 130, 246, 0.08), transparent 45%);
+            background: radial-gradient(circle at 20% 40%, rgba(181, 154, 255, 0.12), transparent 50%),
+                        radial-gradient(circle at 80% 70%, rgba(147, 194, 255, 0.1), transparent 45%);
             filter: blur(10px);
             opacity: 0.75;
             pointer-events: none;
@@ -206,9 +206,9 @@ if (is_logged_in()) {
         }
 
         .feature-card:hover {
-            border-color: var(--primary-green);
+            border-color: rgba(230, 232, 255, 0.6);
             transform: translateY(-8px) scale(1.01);
-            box-shadow: 0 18px 45px rgba(16, 185, 129, 0.22);
+            box-shadow: 0 18px 45px rgba(130, 118, 219, 0.28);
         }
 
         
@@ -250,13 +250,13 @@ if (is_logged_in()) {
         }
 
         .cta-section {
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.05) 100%);
-            border: 1px solid var(--primary-green);
+            background: linear-gradient(135deg, rgba(184, 170, 255, 0.22) 0%, rgba(184, 170, 255, 0.08) 100%);
+            border: 1px solid rgba(227, 230, 255, 0.45);
             border-radius: 12px;
             padding: 3rem;
             text-align: center;
             margin: 4rem 0;
-            box-shadow: 0 22px 50px rgba(16, 185, 129, 0.16);
+            box-shadow: 0 22px 50px rgba(126, 115, 210, 0.26);
         }
 
         .reveal {
@@ -330,6 +330,7 @@ if (is_logged_in()) {
                     <span><?php echo SITE_NAME; ?></span>
                 </a>
                 <ul class="navbar-menu">
+                    <li><a href="index.php" class="active">Home</a></li>
                     <li><a href="#features">Features</a></li>
                     <li><a href="#how-it-works">How It Works</a></li>
                     <li><a href="<?php echo site_url('login.php'); ?>">Login</a></li>

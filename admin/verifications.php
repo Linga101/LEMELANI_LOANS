@@ -107,9 +107,9 @@ $rejected_users = $rejected_stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verifications - <?php echo SITE_NAME; ?></title>
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo asset_url('assets/css/style.css'); ?>">
     <!-- FontAwesome icons -->
-    <link rel="stylesheet" href="../assets/css/fontawesome-all.min.css" />
+    <link rel="stylesheet" href="<?php echo asset_url('assets/css/fontawesome-all.min.css'); ?>" />
     <style>
         .verification-card {
             background: var(--dark-card);
@@ -625,6 +625,6 @@ $rejected_users = $rejected_stmt->fetchAll(PDO::FETCH_ASSOC);
             });
         });
     </script>
-    <script src="../assets/js/sidebar.js"></script>
+    <script src="<?php echo asset_url('assets/js/sidebar.js'); ?>"></script>
 </body>
 </html>

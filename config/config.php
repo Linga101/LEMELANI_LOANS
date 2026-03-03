@@ -225,6 +225,25 @@ function site_url($path = '') {
     return $path === '' ? $base . '/' : $base . '/' . $path;
 }
 
+/**
+ * Build cache-busted asset URLs.
+ * Usage: <link rel="stylesheet" href="<?php echo asset_url('assets/css/style.css'); ?>">
+ */
+function asset_url($path) {
+    $path = ltrim((string)$path, '/');
+    $url = site_url($path);
+
+    $fullPath = ROOT_PATH . '/' . str_replace('/', DIRECTORY_SEPARATOR, $path);
+    if (is_file($fullPath)) {
+        $ver = filemtime($fullPath);
+        if ($ver !== false) {
+            $url .= '?v=' . rawurlencode((string)$ver);
+        }
+    }
+
+    return $url;
+}
+
 function is_logged_in() {
     return isset($_SESSION['user_id']) && isset($_SESSION['user_role']);
 }

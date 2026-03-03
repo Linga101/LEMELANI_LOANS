@@ -81,9 +81,9 @@ $unread_count = $unread_stmt->fetch(PDO::FETCH_ASSOC)['unread'];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notifications - <?php echo SITE_NAME; ?></title>
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo asset_url('assets/css/style.css'); ?>">
     <!-- FontAwesome icons -->
-    <link rel="stylesheet" href="assets/css/fontawesome-all.min.css" />
+    <link rel="stylesheet" href="<?php echo asset_url('assets/css/fontawesome-all.min.css'); ?>" />
     <style>
         .filter-tabs {
             display: flex;
@@ -415,6 +415,6 @@ $unread_count = $unread_stmt->fetch(PDO::FETCH_ASSOC)['unread'];
             <?php endif; ?>
         </div>
     </div>
-    <script src="assets/js/sidebar.js"></script>
+    <script src="<?php echo asset_url('assets/js/sidebar.js'); ?>"></script>
 </body>
 </html>

@@ -108,9 +108,9 @@ $success_rate = $stats['total_transactions'] > 0
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payment Management - <?php echo SITE_NAME; ?></title>
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo asset_url('assets/css/style.css'); ?>">
     <!-- FontAwesome icons -->
-    <link rel="stylesheet" href="../assets/css/fontawesome-all.min.css" />
+    <link rel="stylesheet" href="<?php echo asset_url('assets/css/fontawesome-all.min.css'); ?>" />
 </head>
 <body>
     <div class="gradient-overlay"></div>
@@ -413,6 +413,6 @@ $success_rate = $stats['total_transactions'] > 0
             </div>
         </div>
     </div>
-    <script src="../assets/js/sidebar.js"></script>
+    <script src="<?php echo asset_url('assets/js/sidebar.js'); ?>"></script>
 </body>
 </html>
