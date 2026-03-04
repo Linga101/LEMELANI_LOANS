@@ -251,9 +251,38 @@ function asset_url($path) {
  * Reads flags from environment variables using FF_<FLAG_NAME>=1|true|yes|on.
  */
 function feature_enabled($flagName, $default = false) {
-    $key = 'FF_' . strtoupper(preg_replace('/[^A-Z0-9_]/i', '_', (string)$flagName));
+    $normalized = strtolower((string)$flagName);
+    $key = 'FF_' . strtoupper(preg_replace('/[^A-Z0-9_]/i', '_', $normalized));
     $raw = getenv($key);
     if ($raw === false) {
+        // Global cutover overrides are only applied when the specific flag
+        // is not explicitly set, so per-page flags can still override.
+        $globalAll = getenv('FF_NEXTJS_ALL');
+        if ($globalAll !== false) {
+            $globalAllValue = strtolower(trim((string)$globalAll));
+            if (in_array($globalAllValue, ['1', 'true', 'yes', 'on'], true)) {
+                return true;
+            }
+        }
+
+        if (str_starts_with($normalized, 'nextjs_admin_')) {
+            $globalAdmin = getenv('FF_NEXTJS_ADMIN_ALL');
+            if ($globalAdmin !== false) {
+                $globalAdminValue = strtolower(trim((string)$globalAdmin));
+                if (in_array($globalAdminValue, ['1', 'true', 'yes', 'on'], true)) {
+                    return true;
+                }
+            }
+        } elseif (str_starts_with($normalized, 'nextjs_')) {
+            $globalCustomer = getenv('FF_NEXTJS_CUSTOMER_ALL');
+            if ($globalCustomer !== false) {
+                $globalCustomerValue = strtolower(trim((string)$globalCustomer));
+                if (in_array($globalCustomerValue, ['1', 'true', 'yes', 'on'], true)) {
+                    return true;
+                }
+            }
+        }
+
         return (bool)$default;
     }
 

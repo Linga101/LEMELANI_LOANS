@@ -22,6 +22,9 @@ Defined in `config/config.php`:
 
 ## Suggested first rollout flags
 
+- `FF_NEXTJS_ALL` (global override for all surfaces)
+- `FF_NEXTJS_CUSTOMER_ALL` (global override for customer surfaces)
+- `FF_NEXTJS_ADMIN_ALL` (global override for admin surfaces)
 - `FF_NEXTJS_AUTH`
 - `FF_NEXTJS_DASHBOARD`
 - `FF_NEXTJS_LOANS`
@@ -47,3 +50,13 @@ if (feature_enabled('nextjs_dashboard') && nextjs_url('/dashboard')) {
 ```
 
 Keep PHP pages active while flags are `false`. Enable per-surface gradually.
+
+## Cutover helpers
+
+- `scripts/cutover_readiness.ps1`
+  - Summarizes effective customer/admin flag coverage and worker dry-run status.
+  - Example:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/cutover_readiness.ps1
+```

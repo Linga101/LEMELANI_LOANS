@@ -91,15 +91,15 @@ Status legend:
 |---|---|---|
 | Reminders/escalations | overdue reminders, notifications | partial |
 | Scoring refresh batch | credit scoring recalculation | partial |
-| Reconciliation/import jobs | payment imports/matching | next |
-| Webhook ingestion APIs | mobile money/card provider callbacks | next |
+| Reconciliation/import jobs | payment imports/matching | partial |
+| Webhook ingestion APIs | mobile money/card provider callbacks | implemented |
 
 ## Phase 6 Cutover + Decommission
 
 | Task | Status |
 |---|---|
 | Per-page feature flags for customer/admin | implemented (major pages) |
-| Route traffic to Next.js pages gradually | in progress | Additional customer/admin utility pages now support feature-flag redirects |
+| Route traffic to Next.js pages gradually | in progress | Added global cutover flags (`FF_NEXTJS_ALL`, customer/admin global overrides) + readiness script |
 | Keep PHP fallback + rollback toggles | implemented |
 | Remove PHP views after parity + 2 releases | next |
 

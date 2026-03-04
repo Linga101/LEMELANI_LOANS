@@ -23,6 +23,7 @@ tags:
   - name: Admin Settings
   - name: Admin Platform Accounts
   - name: Admin Reports
+  - name: Integrations
 security:
   - SessionCookie: []
 paths:
@@ -734,6 +735,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponseAdminReportSummary'
+  /integrations/webhooks/{provider}:
+    post:
+      tags: [Integrations]
+      summary: Ingest payment provider webhook events
+      security:
+        - WebhookSecretHeader: []
+      x-required-roles: [public]
+      parameters:
+        - $ref: '#/components/parameters/WebhookProvider'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookIngestRequest'
+      responses:
+        '202':
+          description: Accepted and stored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+        '200':
+          description: Duplicate event already ingested
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+        '401': { $ref: '#/components/responses/Unauthorized' }
 components:
   securitySchemes:
     SessionCookie:
@@ -744,6 +774,10 @@ components:
       type: apiKey
       in: header
       name: X-CSRF-Token
+    WebhookSecretHeader:
+      type: apiKey
+      in: header
+      name: X-Webhook-Secret
   parameters:
     LoanId:
       name: loanId
@@ -777,6 +811,13 @@ components:
       in: path
       required: true
       schema: { type: integer }
+    WebhookProvider:
+      name: provider
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [airtel-money, tnm-mpamba, card]
   responses:
     BadRequest:
       description: Invalid request payload
@@ -1028,6 +1069,9 @@ components:
           maximum: 850
         reason: { type: string }
       required: [creditScore]
+    WebhookIngestRequest:
+      type: object
+      additionalProperties: true
     User:
       type: object
       properties:

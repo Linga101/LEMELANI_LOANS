@@ -8,7 +8,11 @@
     "worker:reminders": "node src/reminders_worker.js",
     "worker:reminders:once": "node src/reminders_worker.js --once",
     "worker:scoring-refresh": "node src/scoring_refresh_worker.js",
-    "worker:scoring-refresh:once": "node src/scoring_refresh_worker.js --once"
+    "worker:scoring-refresh:once": "node src/scoring_refresh_worker.js --once",
+    "worker:payments-reconcile": "node src/payments_reconcile_worker.js",
+    "worker:payments-reconcile:once": "node src/payments_reconcile_worker.js --once",
+    "worker:webhooks-process": "node src/webhooks_process_worker.js",
+    "worker:webhooks-process:once": "node src/webhooks_process_worker.js --once"
   },
   "engines": {
     "node": ">=18"

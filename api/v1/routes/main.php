@@ -6,6 +6,152 @@ try {
         api_success(200, ['token' => csrf_token()]);
     }
 
+    if ($method === 'POST' && preg_match('#^/integrations/webhooks/(airtel-money|tnm-mpamba|card)$#', $routePath, $matches) === 1) {
+        $providerSlug = (string)$matches[1];
+        $providerMap = [
+            'airtel-money' => 'airtel_money',
+            'tnm-mpamba' => 'tnm_mpamba',
+            'card' => 'card_gateway',
+        ];
+        $provider = (string)$providerMap[$providerSlug];
+
+        $secretEnvMap = [
+            'airtel_money' => 'WEBHOOK_SECRET_AIRTEL_MONEY',
+            'tnm_mpamba' => 'WEBHOOK_SECRET_TNM_MPAMBA',
+            'card_gateway' => 'WEBHOOK_SECRET_CARD_GATEWAY',
+        ];
+        $secretEnvKey = (string)$secretEnvMap[$provider];
+        $configuredSecret = trim((string)(getenv($secretEnvKey) ?: ''));
+        if ($configuredSecret === '') {
+            api_error(503, 'WEBHOOK_NOT_CONFIGURED', 'Webhook provider secret is not configured for this provider');
+        }
+
+        $providedSecret = trim((string)($_SERVER['HTTP_X_WEBHOOK_SECRET'] ?? ''));
+        if ($providedSecret === '' || !hash_equals($configuredSecret, $providedSecret)) {
+            api_error(401, 'INVALID_WEBHOOK_SECRET', 'Webhook secret is invalid');
+        }
+
+        $body = api_json_input();
+        $encodedPayload = json_encode($body, JSON_UNESCAPED_SLASHES);
+        if ($encodedPayload === false) {
+            $encodedPayload = '{}';
+        }
+
+        $eventId = sanitize_input((string)(
+            $body['eventId']
+            ?? $body['event_id']
+            ?? $body['id']
+            ?? $body['transactionId']
+            ?? $body['transaction_id']
+            ?? $body['reference']
+            ?? ''
+        ));
+        if ($eventId === '') {
+            $eventId = 'hash_' . substr(hash('sha256', $provider . '|' . $encodedPayload), 0, 32);
+        }
+
+        $eventType = sanitize_input((string)($body['eventType'] ?? $body['event_type'] ?? $body['type'] ?? 'payment_event'));
+        $status = sanitize_input((string)($body['status'] ?? $body['paymentStatus'] ?? $body['state'] ?? 'received'));
+        $reference = sanitize_input((string)($body['paymentReference'] ?? $body['reference'] ?? $body['transactionId'] ?? ''));
+        $normalizedLoanId = isset($body['loanId']) ? (int)$body['loanId'] : null;
+        $normalizedUserId = isset($body['userId']) ? (int)$body['userId'] : null;
+        $normalizedAmount = isset($body['amount']) ? (float)$body['amount'] : (isset($body['amountPaidMwk']) ? (float)$body['amountPaidMwk'] : null);
+
+        $headersPayload = [];
+        if (function_exists('getallheaders')) {
+            $rawHeaders = getallheaders();
+            if (is_array($rawHeaders)) {
+                foreach ($rawHeaders as $k => $v) {
+                    $lk = strtolower((string)$k);
+                    if ($lk === 'x-webhook-secret') {
+                        continue;
+                    }
+                    $headersPayload[(string)$k] = (string)$v;
+                }
+            }
+        }
+        if (empty($headersPayload)) {
+            foreach ($_SERVER as $k => $v) {
+                if (!str_starts_with((string)$k, 'HTTP_')) {
+                    continue;
+                }
+                if ((string)$k === 'HTTP_X_WEBHOOK_SECRET') {
+                    continue;
+                }
+                $headersPayload[(string)$k] = (string)$v;
+            }
+        }
+        $encodedHeaders = json_encode($headersPayload, JSON_UNESCAPED_SLASHES);
+        if ($encodedHeaders === false) {
+            $encodedHeaders = '{}';
+        }
+
+        try {
+            $insert = $db->prepare(
+                "INSERT IGNORE INTO payment_webhook_events
+                 (provider, event_id, event_type, processing_status, http_headers_json, payload_json,
+                  normalized_reference, normalized_user_id, normalized_loan_id, normalized_amount_mwk, received_at)
+                 VALUES
+                 (:provider, :event_id, :event_type, :processing_status, :http_headers_json, :payload_json,
+                  :normalized_reference, :normalized_user_id, :normalized_loan_id, :normalized_amount_mwk, NOW())"
+            );
+            $insert->execute([
+                ':provider' => $provider,
+                ':event_id' => $eventId,
+                ':event_type' => $eventType,
+                ':processing_status' => 'received',
+                ':http_headers_json' => $encodedHeaders,
+                ':payload_json' => $encodedPayload,
+                ':normalized_reference' => $reference !== '' ? $reference : null,
+                ':normalized_user_id' => ($normalizedUserId !== null && $normalizedUserId > 0) ? $normalizedUserId : null,
+                ':normalized_loan_id' => ($normalizedLoanId !== null && $normalizedLoanId > 0) ? $normalizedLoanId : null,
+                ':normalized_amount_mwk' => ($normalizedAmount !== null && $normalizedAmount >= 0) ? $normalizedAmount : null,
+            ]);
+            $inserted = $insert->rowCount() > 0;
+
+            $select = $db->prepare(
+                "SELECT id, received_at
+                 FROM payment_webhook_events
+                 WHERE provider = :provider AND event_id = :event_id
+                 LIMIT 1"
+            );
+            $select->execute([':provider' => $provider, ':event_id' => $eventId]);
+            $eventRow = $select->fetch(PDO::FETCH_ASSOC);
+            $webhookEventId = isset($eventRow['id']) ? (int)$eventRow['id'] : null;
+
+            log_audit(null, 'WEBHOOK_EVENT_RECEIVED', 'payment_webhook_events', $webhookEventId, null, [
+                'provider' => $provider,
+                'event_id' => $eventId,
+                'event_type' => $eventType,
+                'status' => $status,
+                'duplicate' => !$inserted,
+            ]);
+
+            if ($inserted) {
+                api_success(202, [
+                    'accepted' => true,
+                    'duplicate' => false,
+                    'provider' => $provider,
+                    'eventId' => $eventId,
+                    'webhookEventId' => $webhookEventId,
+                ]);
+            }
+
+            api_success(200, [
+                'accepted' => true,
+                'duplicate' => true,
+                'provider' => $provider,
+                'eventId' => $eventId,
+                'webhookEventId' => $webhookEventId,
+            ]);
+        } catch (PDOException $e) {
+            if ((string)$e->getCode() === '42S02') {
+                api_error(503, 'WEBHOOK_STORAGE_UNAVAILABLE', 'Webhook storage table is not available');
+            }
+            throw $e;
+        }
+    }
+
     if ($method === 'POST' && $routePath === '/auth/login') {
         api_rate_limit_check('auth_login', 15, 300);
         $body = api_json_input();

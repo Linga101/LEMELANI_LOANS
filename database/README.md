@@ -36,6 +36,12 @@ This folder contains the integrated **Malawi loan lending** schema used by Lemel
    source c:/xampp/htdocs/LEMELANI_LOANS/database/migrations/20260304_add_worker_job_runs.sql
    ```
 
+6. To enable payment webhook event ingestion storage:
+
+   ```sql
+   source c:/xampp/htdocs/LEMELANI_LOANS/database/migrations/20260304_add_payment_webhook_events.sql
+   ```
+
 ## Main tables
 
 | Table | Purpose |
