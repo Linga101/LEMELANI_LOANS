@@ -13,6 +13,14 @@ if ($requestId === '') {
     $requestId = bin2hex(random_bytes(8));
 }
 header('X-Request-Id: ' . $requestId);
+$_SERVER['APP_REQUEST_ID'] = $requestId;
+
+$auditEventId = trim((string)($_SERVER['HTTP_X_AUDIT_EVENT_ID'] ?? ''));
+if ($auditEventId === '') {
+    $auditEventId = generate_audit_event_id();
+}
+header('X-Audit-Event-Id: ' . $auditEventId);
+$_SERVER['APP_AUDIT_EVENT_ID'] = $auditEventId;
 
 
 try {
@@ -37,4 +45,3 @@ $routePath = $routePath === '' ? '/' : $routePath;
 if ($routePath !== '/' && str_ends_with($routePath, '/')) {
     $routePath = rtrim($routePath, '/');
 }
-

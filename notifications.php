@@ -4,6 +4,12 @@ require_once 'config/config.php';
 // Require login
 require_login();
 
+// Hybrid rollout: route notifications UI to Next.js when enabled.
+$nextNotificationsUrl = nextjs_url('/notifications');
+if (feature_enabled('nextjs_notifications') && $nextNotificationsUrl !== '') {
+    redirect($nextNotificationsUrl);
+}
+
 $database = new Database();
 $db = $database->getConnection();
 

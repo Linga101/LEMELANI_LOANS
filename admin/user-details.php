@@ -2,9 +2,15 @@
 require_once '../config/config.php';
 require_once '../classes/User.php';
 
+// Hybrid rollout: route admin user detail utility to Next.js when enabled.
+$userId = (int)($_GET['id'] ?? 0);
+$nextAdminUserDetailUrl = nextjs_url($userId > 0 ? ('/admin/users/' . $userId) : '/admin/users');
+if (feature_enabled('nextjs_admin_users') && $nextAdminUserDetailUrl !== '') {
+    redirect($nextAdminUserDetailUrl);
+}
+
 require_role(['admin', 'manager']);
 
-$userId = (int)($_GET['id'] ?? 0);
 if ($userId <= 0) {
     redirect('/admin/users.php');
 }

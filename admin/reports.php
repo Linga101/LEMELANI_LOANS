@@ -4,6 +4,12 @@ require_once '../config/config.php';
 // Require admin role
 require_role(['admin', 'manager']);
 
+// Hybrid rollout: route admin reports UI to Next.js when enabled.
+$nextAdminReportsUrl = nextjs_url('/admin/reports');
+if (feature_enabled('nextjs_admin_reports') && $nextAdminReportsUrl !== '') {
+    redirect($nextAdminReportsUrl);
+}
+
 $database = new Database();
 $db = $database->getConnection();
 

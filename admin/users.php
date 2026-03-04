@@ -5,6 +5,12 @@ require_once '../classes/User.php';
 // Require admin role
 require_role(['admin', 'manager']);
 
+// Hybrid rollout: route admin users UI to Next.js when enabled.
+$nextAdminUsersUrl = nextjs_url('/admin/users');
+if (feature_enabled('nextjs_admin_users') && $nextAdminUsersUrl !== '') {
+    redirect($nextAdminUsersUrl);
+}
+
 $database = new Database();
 $db = $database->getConnection();
 $user = new User($db);

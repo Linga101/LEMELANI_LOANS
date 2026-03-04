@@ -4,6 +4,12 @@ require_once '../config/config.php';
 // Require admin role
 require_role(['admin', 'manager']);
 
+// Hybrid rollout: route admin verifications UI to Next.js when enabled.
+$nextAdminVerificationsUrl = nextjs_url('/admin/verifications');
+if (feature_enabled('nextjs_admin_verifications') && $nextAdminVerificationsUrl !== '') {
+    redirect($nextAdminVerificationsUrl);
+}
+
 $database = new Database();
 $db = $database->getConnection();
 

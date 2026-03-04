@@ -1,6 +1,12 @@
 <?php
 require_once 'config/config.php';
 
+// Hybrid rollout: route auth UI to Next.js when enabled.
+$nextAuthUrl = nextjs_url('/login');
+if (feature_enabled('nextjs_auth') && $nextAuthUrl !== '') {
+    redirect($nextAuthUrl);
+}
+
 // Redirect if already logged in
 if (is_logged_in()) {
     redirect('/dashboard.php');

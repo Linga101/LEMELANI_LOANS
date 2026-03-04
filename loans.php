@@ -5,6 +5,12 @@ require_once 'classes/Loan.php';
 // Require login
 require_login();
 
+// Hybrid rollout: route loans UI to Next.js when enabled.
+$nextLoansUrl = nextjs_url('/loans');
+if (feature_enabled('nextjs_loans') && $nextLoansUrl !== '') {
+    redirect($nextLoansUrl);
+}
+
 $database = new Database();
 $db = $database->getConnection();
 $loan = new Loan($db);

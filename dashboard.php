@@ -5,6 +5,12 @@ require_once 'classes/User.php';
 // Require login
 require_login();
 
+// Hybrid rollout: route dashboard UI to Next.js when enabled.
+$nextDashboardUrl = nextjs_url('/dashboard');
+if (feature_enabled('nextjs_dashboard') && $nextDashboardUrl !== '') {
+    redirect($nextDashboardUrl);
+}
+
 // Get user data
 $database = new Database();
 $db = $database->getConnection();

@@ -1,6 +1,12 @@
 <?php
 require_once 'config/config.php';
 
+// Hybrid rollout: route forgot-password UI to Next.js when enabled.
+$nextForgotPasswordUrl = nextjs_url('/forgot-password');
+if (feature_enabled('nextjs_auth') && $nextForgotPasswordUrl !== '') {
+    redirect($nextForgotPasswordUrl);
+}
+
 $errors = [];
 $success = '';
 $email = '';

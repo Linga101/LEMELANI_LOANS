@@ -2,7 +2,7 @@
 
 Last updated: 2026-03-03
 
-This checklist compares `openapi.v1.yaml` to the current PHP API implementation in `api/v1/index.php`.
+This checklist compares `openapi.v1.yaml` to the current PHP API implementation in `api/v1/routes/main.php`.
 
 ## Parity status
 
@@ -32,11 +32,10 @@ This checklist compares `openapi.v1.yaml` to the current PHP API implementation 
 
 - Logout CSRF:
   - API enforces `X-CSRF-Token` for `POST /auth/logout` (safer for cookie-based auth).
-  - OpenAPI currently does not explicitly require `CsrfHeader` on logout.
+  - OpenAPI now explicitly requires `CsrfHeader` on logout.
 
 ## Recommended next contract cleanup
 
-- Add explicit `CsrfHeader` requirement to `POST /auth/logout`.
 - Add dedicated schemas for:
   - `AdminDashboardSummary`
   - `AdminReportsSummary`

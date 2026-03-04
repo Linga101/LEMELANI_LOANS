@@ -1,6 +1,13 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
 
+// Hybrid rollout: route assess-score utility to Next.js when enabled.
+$assessUserId = (int)($_GET['user_id'] ?? 0);
+$nextAssessScoreUrl = nextjs_url($assessUserId > 0 ? ('/admin/assess-score?user_id=' . $assessUserId) : '/admin/assess-score');
+if (feature_enabled('nextjs_admin_users') && $nextAssessScoreUrl !== '') {
+    redirect($nextAssessScoreUrl);
+}
+
 require_role(['admin']);
 
 $userId = $_GET['user_id'] ?? null;

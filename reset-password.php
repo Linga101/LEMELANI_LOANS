@@ -1,6 +1,13 @@
 <?php
 require_once 'config/config.php';
 
+// Hybrid rollout: route reset-password UI to Next.js when enabled.
+$nextResetPasswordUrl = nextjs_url('/reset-password');
+if (feature_enabled('nextjs_auth') && $nextResetPasswordUrl !== '') {
+    $query = $_SERVER['QUERY_STRING'] ?? '';
+    redirect($query !== '' ? ($nextResetPasswordUrl . '?' . $query) : $nextResetPasswordUrl);
+}
+
 if (is_logged_in()) {
     redirect('/dashboard.php');
 }

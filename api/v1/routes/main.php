@@ -652,6 +652,83 @@ try {
         api_success(200, ['items' => $payload]);
     }
 
+    if ($method === 'GET' && $routePath === '/customer/credit-history') {
+        api_require_auth(['customer', 'user']);
+        $userId = (int)get_user_id();
+
+        $userObj = new User($db);
+        $userData = $userObj->getUserById($userId);
+        if (!$userData) {
+            api_error(404, 'NOT_FOUND', 'User not found');
+        }
+        $userStats = $userObj->getUserStats($userId);
+
+        $historyStmt = $db->prepare(
+            "SELECT ch.*, l.principal_mwk AS loan_amount, l.status as loan_status
+             FROM credit_history ch
+             LEFT JOIN loans l ON ch.loan_id = l.loan_id
+             WHERE ch.user_id = :user_id
+             ORDER BY ch.created_at DESC"
+        );
+        $historyStmt->execute([':user_id' => $userId]);
+        $creditHistory = $historyStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $creditScore = (int)$userData['credit_score'];
+        $totalLoans = (int)($userStats['loans']['total_loans'] ?? 0);
+        $repaidLoans = (int)($userStats['loans']['repaid_loans'] ?? 0);
+
+        $paymentHistoryScore = $totalLoans > 0
+            ? (int)round(($repaidLoans / $totalLoans) * 340)
+            : 170;
+        $maxLoan = 300000.0;
+        $outstanding = (float)($userStats['outstanding_balance'] ?? 0);
+        $utilization = $outstanding > 0 ? min(($outstanding / $maxLoan), 1.0) : 0.0;
+        $creditUtilizationScore = (int)round((1 - $utilization) * 255);
+        $accountAgeDays = (time() - strtotime((string)$userData['created_at'])) / 86400;
+        $ageFactor = min($accountAgeDays / 365, 1.0);
+        $creditAgeScore = (int)round($ageFactor * 170);
+        $loanDiversityScore = min($totalLoans * 17, 85);
+
+        $rating = 'Very Poor';
+        if ($creditScore >= 750) {
+            $rating = 'Excellent';
+        } elseif ($creditScore >= 650) {
+            $rating = 'Good';
+        } elseif ($creditScore >= 500) {
+            $rating = 'Fair';
+        } elseif ($creditScore >= 400) {
+            $rating = 'Poor';
+        }
+
+        api_success(200, [
+            'creditScore' => $creditScore,
+            'rating' => $rating,
+            'breakdown' => [
+                'paymentHistory' => [
+                    'score' => $paymentHistoryScore,
+                    'max' => 340,
+                    'percentage' => round(($paymentHistoryScore / 340) * 100, 1),
+                ],
+                'creditUtilization' => [
+                    'score' => $creditUtilizationScore,
+                    'max' => 255,
+                    'percentage' => round(($creditUtilizationScore / 255) * 100, 1),
+                ],
+                'creditAge' => [
+                    'score' => $creditAgeScore,
+                    'max' => 170,
+                    'percentage' => round(($creditAgeScore / 170) * 100, 1),
+                ],
+                'loanDiversity' => [
+                    'score' => $loanDiversityScore,
+                    'max' => 85,
+                    'percentage' => round(($loanDiversityScore / 85) * 100, 1),
+                ],
+            ],
+            'events' => $creditHistory,
+        ]);
+    }
+
     if ($method === 'GET' && $routePath === '/customer/payout-accounts') {
         api_require_auth(['customer', 'user']);
         $activeOnly = true;
@@ -817,18 +894,7 @@ try {
         }
 
         $relativePath = ltrim(str_replace(['\\', '..'], ['/', ''], (string)$relativePath), '/');
-        $candidates = [
-            PRIVATE_STORAGE_PATH . $relativePath,
-            ROOT_PATH . '/uploads/' . $relativePath,
-        ];
-
-        $filePath = null;
-        foreach ($candidates as $candidate) {
-            if (is_file($candidate)) {
-                $filePath = $candidate;
-                break;
-            }
-        }
+        $filePath = storage_resolve_document_path($relativePath);
 
         if ($filePath === null) {
             api_error(404, 'NOT_FOUND', 'Document file missing');
@@ -1088,6 +1154,104 @@ try {
         ]);
     }
 
+    if ($method === 'POST' && preg_match('#^/admin/verifications/(\d+)/verify$#', $routePath, $matches) === 1) {
+        api_require_auth(['admin', 'manager']);
+        api_require_csrf_header();
+        $userId = (int)$matches[1];
+
+        if ($userId <= 0) {
+            api_error(400, 'VALIDATION_ERROR', 'Invalid user id');
+        }
+
+        $targetUser = api_fetch_user($db, $userId);
+        if (!$targetUser) {
+            api_error(404, 'NOT_FOUND', 'User not found');
+        }
+
+        $db->beginTransaction();
+        try {
+            $updateStmt = $db->prepare("UPDATE users SET verification_status = 'verified' WHERE user_id = :user_id");
+            $updateStmt->execute([':user_id' => $userId]);
+
+            $creditStmt = $db->prepare("UPDATE users SET credit_score = credit_score + 50 WHERE user_id = :user_id");
+            $creditStmt->execute([':user_id' => $userId]);
+
+            $notifStmt = $db->prepare(
+                "INSERT INTO notifications (user_id, notification_type, title, message)
+                 VALUES (:user_id, 'system', 'Account Verified!',
+                         'Your account has been verified. You can now apply for loans.')"
+            );
+            $notifStmt->execute([':user_id' => $userId]);
+
+            $db->commit();
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
+
+        log_audit((int)get_user_id(), 'USER_VERIFIED', 'users', $userId);
+        $updatedUser = api_fetch_user($db, $userId);
+
+        api_success(200, [
+            'message' => 'User verified successfully',
+            'user' => $updatedUser ? api_user_payload($updatedUser) : ['userId' => $userId],
+        ]);
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/verifications/(\d+)/reject$#', $routePath, $matches) === 1) {
+        api_require_auth(['admin', 'manager']);
+        api_require_csrf_header();
+        $userId = (int)$matches[1];
+        $body = api_json_input();
+        $rejectionReason = sanitize_input((string)($body['rejectionReason'] ?? 'Verification documents rejected'));
+
+        if ($userId <= 0) {
+            api_error(400, 'VALIDATION_ERROR', 'Invalid user id');
+        }
+        if ($rejectionReason === '') {
+            api_error(400, 'VALIDATION_ERROR', 'Rejection reason is required', [
+                'rejectionReason' => 'Rejection reason is required',
+            ]);
+        }
+
+        $targetUser = api_fetch_user($db, $userId);
+        if (!$targetUser) {
+            api_error(404, 'NOT_FOUND', 'User not found');
+        }
+
+        $db->beginTransaction();
+        try {
+            $updateStmt = $db->prepare("UPDATE users SET verification_status = 'rejected' WHERE user_id = :user_id");
+            $updateStmt->execute([':user_id' => $userId]);
+
+            $notifStmt = $db->prepare(
+                "INSERT INTO notifications (user_id, notification_type, title, message)
+                 VALUES (:user_id, 'system', 'Verification Rejected', :message)"
+            );
+            $notifStmt->execute([
+                ':user_id' => $userId,
+                ':message' => 'Your verification was rejected: ' . $rejectionReason . '. Please resubmit your documents.',
+            ]);
+
+            $db->commit();
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
+
+        log_audit((int)get_user_id(), 'USER_VERIFICATION_REJECTED', 'users', $userId, null, ['reason' => $rejectionReason]);
+        $updatedUser = api_fetch_user($db, $userId);
+
+        api_success(200, [
+            'message' => 'Verification rejected',
+            'user' => $updatedUser ? api_user_payload($updatedUser) : ['userId' => $userId],
+        ]);
+    }
+
     if ($method === 'GET' && $routePath === '/admin/users') {
         api_require_auth(['admin', 'manager']);
 
@@ -1133,6 +1297,277 @@ try {
         ]);
     }
 
+    if ($method === 'POST' && preg_match('#^/admin/users/(\d+)/status$#', $routePath, $matches) === 1) {
+        api_require_auth(['admin', 'manager']);
+        api_require_csrf_header();
+        $userId = (int)$matches[1];
+        $body = api_json_input();
+        $status = sanitize_input((string)($body['status'] ?? ''));
+
+        if ($userId <= 0) {
+            api_error(400, 'VALIDATION_ERROR', 'Invalid user id');
+        }
+        if (!in_array($status, ['active', 'suspended'], true)) {
+            api_error(400, 'VALIDATION_ERROR', 'Invalid status value', [
+                'status' => 'Status must be one of: active, suspended',
+            ]);
+        }
+
+        $targetUser = api_fetch_user($db, $userId);
+        if (!$targetUser) {
+            api_error(404, 'NOT_FOUND', 'User not found');
+        }
+
+        $userObj = new User($db);
+        if (!$userObj->updateAccountStatus($userId, $status)) {
+            api_error(400, 'UPDATE_FAILED', 'Failed to update account status');
+        }
+
+        if ($status === 'suspended') {
+            $notifStmt = $db->prepare(
+                "INSERT INTO notifications (user_id, notification_type, title, message)
+                 VALUES (:user_id, 'system', 'Account Suspended',
+                         'Your account has been suspended. Please contact support.')"
+            );
+            $notifStmt->execute([':user_id' => $userId]);
+            log_audit((int)get_user_id(), 'USER_SUSPENDED', 'users', $userId);
+        } else {
+            log_audit((int)get_user_id(), 'USER_ACTIVATED', 'users', $userId);
+        }
+
+        $updatedUser = api_fetch_user($db, $userId);
+        api_success(200, [
+            'message' => $status === 'suspended' ? 'User account suspended' : 'User account activated',
+            'user' => $updatedUser ? api_user_payload($updatedUser) : ['userId' => $userId],
+        ]);
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/users/(\d+)/credit-score$#', $routePath, $matches) === 1) {
+        api_require_auth(['admin', 'manager']);
+        api_require_csrf_header();
+        $userId = (int)$matches[1];
+        $body = api_json_input();
+        $creditScore = isset($body['creditScore']) ? (int)$body['creditScore'] : 0;
+        $reason = sanitize_input((string)($body['reason'] ?? ''));
+
+        if ($userId <= 0) {
+            api_error(400, 'VALIDATION_ERROR', 'Invalid user id');
+        }
+        if ($creditScore < 300 || $creditScore > 850) {
+            api_error(400, 'VALIDATION_ERROR', 'Credit score must be between 300 and 850', [
+                'creditScore' => 'Credit score must be between 300 and 850',
+            ]);
+        }
+
+        $targetUser = api_fetch_user($db, $userId);
+        if (!$targetUser) {
+            api_error(404, 'NOT_FOUND', 'User not found');
+        }
+
+        $userObj = new User($db);
+        if (!$userObj->updateCreditScore($userId, $creditScore, $reason)) {
+            api_error(400, 'UPDATE_FAILED', 'Failed to update credit score');
+        }
+
+        log_audit((int)get_user_id(), 'CREDIT_SCORE_ADJUSTED', 'users', $userId, null, [
+            'new_score' => $creditScore,
+            'reason' => $reason,
+        ]);
+        $updatedUser = api_fetch_user($db, $userId);
+
+        api_success(200, [
+            'message' => 'Credit score updated successfully',
+            'user' => $updatedUser ? api_user_payload($updatedUser) : ['userId' => $userId],
+        ]);
+    }
+
+    if ($method === 'GET' && $routePath === '/admin/payments') {
+        api_require_auth(['admin', 'manager']);
+
+        $filterMethod = sanitize_input((string)($_GET['method'] ?? 'all'));
+        $filterStatus = sanitize_input((string)($_GET['status'] ?? 'all'));
+        $search = sanitize_input((string)($_GET['search'] ?? ''));
+        $dateFrom = sanitize_input((string)($_GET['date_from'] ?? ''));
+        $dateTo = sanitize_input((string)($_GET['date_to'] ?? ''));
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 100;
+        if ($limit < 1) {
+            $limit = 1;
+        } elseif ($limit > 500) {
+            $limit = 500;
+        }
+
+        $query = "SELECT r.repayment_id, r.loan_id, r.user_id, r.amount_paid_mwk AS payment_amount, r.payment_method,
+                         r.payment_reference AS transaction_reference, r.paid_at AS payment_date, r.payment_status,
+                         r.is_partial, u.full_name, u.email, l.principal_mwk AS loan_amount
+                  FROM repayments r
+                  JOIN users u ON r.user_id = u.user_id
+                  JOIN loans l ON r.loan_id = l.loan_id
+                  WHERE 1=1";
+        $params = [];
+
+        if ($filterMethod !== 'all' && $filterMethod !== '') {
+            $query .= " AND r.payment_method = :method";
+            $params[':method'] = $filterMethod;
+        }
+        if ($filterStatus !== 'all' && $filterStatus !== '') {
+            $query .= " AND r.payment_status = :status";
+            $params[':status'] = $filterStatus;
+        }
+        if ($search !== '') {
+            $query .= " AND (u.full_name LIKE :search OR u.email LIKE :search OR r.payment_reference LIKE :search)";
+            $params[':search'] = '%' . $search . '%';
+        }
+        if ($dateFrom !== '') {
+            $query .= " AND DATE(r.paid_at) >= :date_from";
+            $params[':date_from'] = $dateFrom;
+        }
+        if ($dateTo !== '') {
+            $query .= " AND DATE(r.paid_at) <= :date_to";
+            $params[':date_to'] = $dateTo;
+        }
+        $query .= " ORDER BY r.paid_at DESC LIMIT :limit";
+
+        $stmt = $db->prepare($query);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v, PDO::PARAM_STR);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        $payments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $statsStmt = $db->prepare(
+            "SELECT COUNT(*) as total_transactions,
+                    SUM(CASE WHEN payment_status = 'completed' THEN 1 ELSE 0 END) as successful,
+                    SUM(CASE WHEN payment_status = 'pending' THEN 1 ELSE 0 END) as pending,
+                    SUM(CASE WHEN payment_status = 'failed' THEN 1 ELSE 0 END) as failed,
+                    COALESCE(SUM(CASE WHEN payment_status = 'completed' THEN amount_paid_mwk ELSE 0 END), 0) as total_collected,
+                    COALESCE(SUM(amount_paid_mwk), 0) as total_amount
+             FROM repayments"
+        );
+        $statsStmt->execute();
+        $stats = $statsStmt->fetch(PDO::FETCH_ASSOC);
+
+        $methodStmt = $db->prepare(
+            "SELECT payment_method, COUNT(*) as count,
+                    COALESCE(SUM(CASE WHEN payment_status = 'completed' THEN amount_paid_mwk ELSE 0 END), 0) as total
+             FROM repayments
+             WHERE payment_status = 'completed'
+             GROUP BY payment_method"
+        );
+        $methodStmt->execute();
+        $paymentMethods = $methodStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        api_success(200, [
+            'items' => array_map(static fn(array $p): array => api_repayment_payload($p), $payments),
+            'stats' => $stats,
+            'methodBreakdown' => $paymentMethods,
+        ]);
+    }
+
+    if ($method === 'GET' && $routePath === '/admin/platform-accounts') {
+        api_require_auth(['admin', 'manager']);
+        $loanObj = new Loan($db);
+        $accounts = $loanObj->getPlatformAccounts(false);
+
+        $activeCount = 0;
+        $defaultAccount = null;
+        $totalBalance = 0.0;
+        foreach ($accounts as $acc) {
+            if ((int)$acc['is_active'] === 1) {
+                $activeCount++;
+                $totalBalance += (float)$acc['current_balance_mwk'];
+            }
+            if ((int)$acc['is_default'] === 1 && $defaultAccount === null) {
+                $defaultAccount = $acc;
+            }
+        }
+
+        api_success(200, [
+            'items' => $accounts,
+            'stats' => [
+                'totalAccounts' => count($accounts),
+                'activeAccounts' => $activeCount,
+                'totalActiveBalanceMwk' => $totalBalance,
+            ],
+            'defaultAccount' => $defaultAccount,
+        ]);
+    }
+
+    if ($method === 'POST' && $routePath === '/admin/platform-accounts') {
+        api_require_auth(['admin', 'manager']);
+        api_require_csrf_header();
+        $body = api_json_input();
+
+        $data = [
+            'account_type' => sanitize_input((string)($body['accountType'] ?? '')),
+            'account_provider' => sanitize_input((string)($body['accountProvider'] ?? '')),
+            'account_name' => sanitize_input((string)($body['accountName'] ?? '')),
+            'account_number' => sanitize_input((string)($body['accountNumber'] ?? '')),
+            'currency_code' => sanitize_input((string)($body['currencyCode'] ?? 'MWK')),
+            'current_balance_mwk' => (float)($body['currentBalanceMwk'] ?? 0),
+            'is_default' => !empty($body['isDefault']) ? 1 : 0,
+            'is_active' => array_key_exists('isActive', $body) ? (!empty($body['isActive']) ? 1 : 0) : 1,
+        ];
+
+        $loanObj = new Loan($db);
+        $result = $loanObj->createPlatformAccount($data);
+        if (empty($result['success'])) {
+            api_error(400, 'CREATE_FAILED', (string)($result['message'] ?? 'Failed to create platform account'));
+        }
+
+        log_audit((int)get_user_id(), 'PLATFORM_ACCOUNT_CREATED', 'platform_accounts', (int)$result['account_id'], null, $data);
+        api_success(201, ['accountId' => (int)$result['account_id']]);
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/platform-accounts/(\d+)/default$#', $routePath, $matches) === 1) {
+        api_require_auth(['admin', 'manager']);
+        api_require_csrf_header();
+        $accountId = (int)$matches[1];
+        $loanObj = new Loan($db);
+        $result = $loanObj->setDefaultPlatformAccount($accountId);
+        if (empty($result['success'])) {
+            api_error(400, 'UPDATE_FAILED', (string)($result['message'] ?? 'Failed to set default account'));
+        }
+        log_audit((int)get_user_id(), 'PLATFORM_ACCOUNT_SET_DEFAULT', 'platform_accounts', $accountId);
+        api_success(200, ['message' => 'Default platform account updated']);
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/platform-accounts/(\d+)/status$#', $routePath, $matches) === 1) {
+        api_require_auth(['admin', 'manager']);
+        api_require_csrf_header();
+        $accountId = (int)$matches[1];
+        $body = api_json_input();
+        $isActive = !empty($body['isActive']) ? 1 : 0;
+
+        $loanObj = new Loan($db);
+        $result = $loanObj->setPlatformAccountStatus($accountId, $isActive);
+        if (empty($result['success'])) {
+            api_error(400, 'UPDATE_FAILED', (string)($result['message'] ?? 'Failed to update account status'));
+        }
+        log_audit((int)get_user_id(), 'PLATFORM_ACCOUNT_STATUS_CHANGED', 'platform_accounts', $accountId, null, ['is_active' => $isActive]);
+        api_success(200, ['message' => $isActive ? 'Account activated' : 'Account deactivated']);
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/platform-accounts/(\d+)/balance$#', $routePath, $matches) === 1) {
+        api_require_auth(['admin', 'manager']);
+        api_require_csrf_header();
+        $accountId = (int)$matches[1];
+        $body = api_json_input();
+        $newBalance = (float)($body['currentBalanceMwk'] ?? -1);
+        if ($newBalance < 0) {
+            api_error(400, 'VALIDATION_ERROR', 'Balance must be zero or greater', [
+                'currentBalanceMwk' => 'Balance must be zero or greater',
+            ]);
+        }
+        $loanObj = new Loan($db);
+        $result = $loanObj->updatePlatformAccountBalance($accountId, $newBalance);
+        if (empty($result['success'])) {
+            api_error(400, 'UPDATE_FAILED', (string)($result['message'] ?? 'Failed to update account balance'));
+        }
+        log_audit((int)get_user_id(), 'PLATFORM_ACCOUNT_BALANCE_UPDATED', 'platform_accounts', $accountId, null, ['current_balance_mwk' => $newBalance]);
+        api_success(200, ['message' => 'Account balance updated']);
+    }
+
     if ($method === 'GET' && $routePath === '/admin/settings') {
         api_require_auth(['admin']);
 
@@ -1161,6 +1596,50 @@ try {
             'settings' => $settings,
             'systemStats' => $systemStats,
         ]);
+    }
+
+    if ($method === 'POST' && $routePath === '/admin/settings') {
+        api_require_auth(['admin']);
+        api_require_csrf_header();
+        $body = api_json_input();
+
+        $settingsToUpdate = [
+            'min_loan_amount',
+            'max_loan_amount',
+            'default_interest_rate',
+            'default_loan_term_days',
+            'late_payment_penalty_rate',
+            'min_credit_score',
+            'max_active_loans',
+        ];
+
+        $updatedCount = 0;
+        foreach ($settingsToUpdate as $key) {
+            if (!array_key_exists($key, $body)) {
+                continue;
+            }
+            $value = sanitize_input((string)$body[$key]);
+            $stmt = $db->prepare(
+                "UPDATE system_settings
+                 SET setting_value = :value, updated_by = :updated_by
+                 WHERE setting_key = :key"
+            );
+            $ok = $stmt->execute([
+                ':value' => $value,
+                ':updated_by' => (int)get_user_id(),
+                ':key' => $key,
+            ]);
+            if ($ok) {
+                $updatedCount++;
+            }
+        }
+
+        if ($updatedCount < 1) {
+            api_error(400, 'VALIDATION_ERROR', 'No supported settings were updated');
+        }
+
+        log_audit((int)get_user_id(), 'SETTINGS_UPDATED', 'system_settings', null, null, $body);
+        api_success(200, ['updatedCount' => $updatedCount]);
     }
 
     if ($method === 'GET' && $routePath === '/admin/reports/summary') {

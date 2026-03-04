@@ -6,6 +6,12 @@ require_once 'classes/Payment.php';
 // Require login
 require_login();
 
+// Hybrid rollout: route repayments UI to Next.js when enabled.
+$nextRepaymentsUrl = nextjs_url('/repayments');
+if (feature_enabled('nextjs_repayments') && $nextRepaymentsUrl !== '') {
+    redirect($nextRepaymentsUrl);
+}
+
 $database = new Database();
 $db = $database->getConnection();
 $loan_obj = new Loan($db);

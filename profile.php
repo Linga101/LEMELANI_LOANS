@@ -5,6 +5,12 @@ require_once 'classes/User.php';
 // Require login
 require_login();
 
+// Hybrid rollout: route profile UI to Next.js when enabled.
+$nextProfileUrl = nextjs_url('/profile');
+if (feature_enabled('nextjs_profile') && $nextProfileUrl !== '') {
+    redirect($nextProfileUrl);
+}
+
 $database = new Database();
 $db = $database->getConnection();
 $user = new User($db);

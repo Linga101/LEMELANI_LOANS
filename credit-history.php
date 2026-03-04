@@ -2,6 +2,12 @@
 require_once 'config/config.php';
 require_once 'classes/User.php';
 
+// Hybrid rollout: route credit-history UI to Next.js when enabled.
+$nextCreditHistoryUrl = nextjs_url('/credit-history');
+if (feature_enabled('nextjs_credit_history') && $nextCreditHistoryUrl !== '') {
+    redirect($nextCreditHistoryUrl);
+}
+
 // Require login
 require_login();
 

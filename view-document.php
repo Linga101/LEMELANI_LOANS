@@ -51,18 +51,7 @@ if (empty($relativePath)) {
 }
 
 $relativePath = ltrim(str_replace(['\\', '..'], ['/', ''], $relativePath), '/');
-$candidates = [
-    PRIVATE_STORAGE_PATH . $relativePath,
-    ROOT_PATH . '/uploads/' . $relativePath
-];
-
-$filePath = null;
-foreach ($candidates as $candidate) {
-    if (is_file($candidate)) {
-        $filePath = $candidate;
-        break;
-    }
-}
+$filePath = storage_resolve_document_path($relativePath);
 
 if ($filePath === null) {
     http_response_code(404);

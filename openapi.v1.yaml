@@ -308,6 +308,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponseRepaymentList'
+  /customer/credit-history:
+    get:
+      tags: [Customer]
+      summary: Get customer credit score breakdown and timeline events
+      x-required-roles: [user]
+      responses:
+        '200':
+          description: Credit history details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
   /customer/notifications:
     get:
       tags: [Customer Notifications]
@@ -465,6 +477,46 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponseUserList'
+  /admin/verifications/{userId}/verify:
+    post:
+      tags: [Admin Verifications]
+      summary: Verify a user's KYC status
+      security:
+        - SessionCookie: []
+        - CsrfHeader: []
+      x-required-roles: [admin, manager]
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: User verification approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /admin/verifications/{userId}/reject:
+    post:
+      tags: [Admin Verifications]
+      summary: Reject a user's KYC verification
+      security:
+        - SessionCookie: []
+        - CsrfHeader: []
+      x-required-roles: [admin, manager]
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectVerificationRequest'
+      responses:
+        '200':
+          description: User verification rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
   /admin/users:
     get:
       tags: [Admin Users]
@@ -477,6 +529,52 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponseUserList'
+  /admin/users/{userId}/status:
+    post:
+      tags: [Admin Users]
+      summary: Activate or suspend a user account
+      security:
+        - SessionCookie: []
+        - CsrfHeader: []
+      x-required-roles: [admin, manager]
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserStatusRequest'
+      responses:
+        '200':
+          description: User status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /admin/users/{userId}/credit-score:
+    post:
+      tags: [Admin Users]
+      summary: Adjust user credit score
+      security:
+        - SessionCookie: []
+        - CsrfHeader: []
+      x-required-roles: [admin, manager]
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCreditScoreRequest'
+      responses:
+        '200':
+          description: User credit score updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
   /admin/settings:
     get:
       tags: [Admin Settings]
@@ -489,6 +587,141 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponseSettings'
+    post:
+      tags: [Admin Settings]
+      summary: Update system settings
+      security:
+        - SessionCookie: []
+        - CsrfHeader: []
+      x-required-roles: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Updated settings count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /admin/payments:
+    get:
+      tags: [Admin Payments]
+      summary: List payment transactions with filters and aggregate stats
+      x-required-roles: [admin, manager]
+      responses:
+        '200':
+          description: Payment list and stats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /admin/platform-accounts:
+    get:
+      tags: [Admin Platform Accounts]
+      summary: List platform disbursement accounts and summary stats
+      x-required-roles: [admin, manager]
+      responses:
+        '200':
+          description: Platform account list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+    post:
+      tags: [Admin Platform Accounts]
+      summary: Create platform account
+      security:
+        - SessionCookie: []
+        - CsrfHeader: []
+      x-required-roles: [admin, manager]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /admin/platform-accounts/{id}/default:
+    post:
+      tags: [Admin Platform Accounts]
+      summary: Set platform account as default
+      security:
+        - SessionCookie: []
+        - CsrfHeader: []
+      x-required-roles: [admin, manager]
+      parameters:
+        - $ref: '#/components/parameters/PlatformAccountId'
+      responses:
+        '200':
+          description: Default updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /admin/platform-accounts/{id}/status:
+    post:
+      tags: [Admin Platform Accounts]
+      summary: Activate/deactivate platform account
+      security:
+        - SessionCookie: []
+        - CsrfHeader: []
+      x-required-roles: [admin, manager]
+      parameters:
+        - $ref: '#/components/parameters/PlatformAccountId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isActive: { type: boolean }
+              required: [isActive]
+      responses:
+        '200':
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /admin/platform-accounts/{id}/balance:
+    post:
+      tags: [Admin Platform Accounts]
+      summary: Update platform account balance
+      security:
+        - SessionCookie: []
+        - CsrfHeader: []
+      x-required-roles: [admin, manager]
+      parameters:
+        - $ref: '#/components/parameters/PlatformAccountId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currentBalanceMwk: { type: number }
+              required: [currentBalanceMwk]
+      responses:
+        '200':
+          description: Balance updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
   /admin/reports/summary:
     get:
       tags: [Admin Reports]
@@ -514,6 +747,16 @@ components:
   parameters:
     LoanId:
       name: loanId
+      in: path
+      required: true
+      schema: { type: integer }
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema: { type: integer }
+    PlatformAccountId:
+      name: id
       in: path
       required: true
       schema: { type: integer }
@@ -764,6 +1007,27 @@ components:
       properties:
         rejectionReason: { type: string }
       required: [rejectionReason]
+    RejectVerificationRequest:
+      type: object
+      properties:
+        rejectionReason: { type: string }
+      required: [rejectionReason]
+    UpdateUserStatusRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [active, suspended]
+      required: [status]
+    UpdateCreditScoreRequest:
+      type: object
+      properties:
+        creditScore:
+          type: integer
+          minimum: 300
+          maximum: 850
+        reason: { type: string }
+      required: [creditScore]
     User:
       type: object
       properties:

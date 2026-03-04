@@ -2,6 +2,12 @@
 require_once 'config/config.php';
 require_once 'classes/Payment.php';
 
+// Hybrid rollout: route payment-history UI to Next.js when enabled.
+$nextPaymentHistoryUrl = nextjs_url('/payment-history');
+if (feature_enabled('nextjs_repayments') && $nextPaymentHistoryUrl !== '') {
+    redirect($nextPaymentHistoryUrl);
+}
+
 // Require login
 require_login();
 

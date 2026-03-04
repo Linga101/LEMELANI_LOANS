@@ -3,6 +3,12 @@ require_once 'config/config.php';
 require_once 'classes/User.php';
 require_once 'classes/Loan.php';
 
+// Hybrid rollout: route apply-loan UI to Next.js when enabled.
+$nextApplyLoanUrl = nextjs_url('/apply-loan');
+if (feature_enabled('nextjs_loans') && $nextApplyLoanUrl !== '') {
+    redirect($nextApplyLoanUrl);
+}
+
 // Require login
 require_login();
 

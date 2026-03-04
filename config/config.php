@@ -125,9 +125,11 @@ define('UPLOAD_URL', SITE_URL . '/uploads/');
 define('PRIVATE_STORAGE_PATH', ROOT_PATH . '/storage/private/');
 define('ID_UPLOAD_DIR', PRIVATE_STORAGE_PATH . 'ids/');
 define('SELFIE_UPLOAD_DIR', PRIVATE_STORAGE_PATH . 'selfies/');
+define('FILE_STORAGE_BACKEND', strtolower((string)(getenv('FILE_STORAGE_BACKEND') ?: 'local')));
+define('OBJECT_STORAGE_LOCAL_MIRROR_PATH', ROOT_PATH . '/storage/object/');
 
 // Create storage directories if they don't exist
-foreach ([UPLOAD_PATH, ID_UPLOAD_DIR, SELFIE_UPLOAD_DIR] as $dir) {
+foreach ([UPLOAD_PATH, ID_UPLOAD_DIR, SELFIE_UPLOAD_DIR, OBJECT_STORAGE_LOCAL_MIRROR_PATH] as $dir) {
     if (!file_exists($dir)) {
         mkdir($dir, 0755, true);
     }
@@ -787,11 +789,154 @@ function generate_transaction_reference() {
     return 'LML-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -6));
 }
 
+function generate_audit_event_id() {
+    return 'evt_' . bin2hex(random_bytes(10));
+}
+
+function current_request_id() {
+    static $requestId = null;
+    if ($requestId !== null) {
+        return $requestId;
+    }
+
+    $candidates = [
+        (string)($_SERVER['APP_REQUEST_ID'] ?? ''),
+        (string)($_SERVER['HTTP_X_REQUEST_ID'] ?? ''),
+    ];
+    foreach ($candidates as $candidate) {
+        $candidate = trim($candidate);
+        if ($candidate !== '') {
+            $requestId = $candidate;
+            return $requestId;
+        }
+    }
+
+    $requestId = bin2hex(random_bytes(8));
+    $_SERVER['APP_REQUEST_ID'] = $requestId;
+    return $requestId;
+}
+
+function storage_normalize_relative_path($relativePath) {
+    $clean = str_replace(['\\', '..'], ['/', ''], (string)$relativePath);
+    return ltrim($clean, '/');
+}
+
+function storage_base_path_for_backend() {
+    if (FILE_STORAGE_BACKEND === 'object') {
+        return rtrim(OBJECT_STORAGE_LOCAL_MIRROR_PATH, '/\\') . DIRECTORY_SEPARATOR;
+    }
+    return rtrim(PRIVATE_STORAGE_PATH, '/\\') . DIRECTORY_SEPARATOR;
+}
+
+function storage_resolve_document_path($relativePath) {
+    $relativePath = storage_normalize_relative_path($relativePath);
+    if ($relativePath === '') {
+        return null;
+    }
+
+    $candidates = [
+        storage_base_path_for_backend() . str_replace('/', DIRECTORY_SEPARATOR, $relativePath),
+        rtrim(PRIVATE_STORAGE_PATH, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath),
+        rtrim(UPLOAD_PATH, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath),
+    ];
+
+    foreach ($candidates as $candidate) {
+        if (is_file($candidate)) {
+            return $candidate;
+        }
+    }
+
+    return null;
+}
+
+function storage_save_uploaded_file($tmpPath, $folder, $prefix, $extension) {
+    $folder = trim((string)$folder, '/');
+    $extension = strtolower(trim((string)$extension));
+    if ($folder === '' || $tmpPath === '' || $extension === '') {
+        return null;
+    }
+
+    $fileName = uniqid() . '_' . trim((string)$prefix, '_') . '.' . $extension;
+    $relativePath = $folder . '/' . $fileName;
+    $destination = storage_base_path_for_backend() . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+    $destinationDir = dirname($destination);
+
+    if (!is_dir($destinationDir) && !mkdir($destinationDir, 0755, true) && !is_dir($destinationDir)) {
+        return null;
+    }
+
+    if (move_uploaded_file($tmpPath, $destination)) {
+        return $relativePath;
+    }
+
+    return null;
+}
+
+function storage_save_base64_file($dataUri, $folder, $prefix, array $allowedExt = ['jpg', 'jpeg', 'png']) {
+    if (!preg_match('/^data:image\/([^;]+);base64,(.+)$/', (string)$dataUri, $matches)) {
+        return null;
+    }
+
+    $ext = strtolower(trim((string)$matches[1]));
+    if (!in_array($ext, $allowedExt, true)) {
+        return null;
+    }
+
+    $decoded = base64_decode((string)$matches[2], true);
+    if ($decoded === false) {
+        return null;
+    }
+
+    $folder = trim((string)$folder, '/');
+    if ($folder === '') {
+        return null;
+    }
+
+    $fileName = uniqid() . '_' . trim((string)$prefix, '_') . '.' . $ext;
+    $relativePath = $folder . '/' . $fileName;
+    $destination = storage_base_path_for_backend() . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+    $destinationDir = dirname($destination);
+
+    if (!is_dir($destinationDir) && !mkdir($destinationDir, 0755, true) && !is_dir($destinationDir)) {
+        return null;
+    }
+
+    if (file_put_contents($destination, $decoded) !== false) {
+        return $relativePath;
+    }
+
+    return null;
+}
+
 // Log audit trail
 function log_audit($user_id, $action, $entity_type = null, $entity_id = null, $old_values = null, $new_values = null) {
     try {
         $database = new Database();
         $db = $database->getConnection();
+        $eventId = generate_audit_event_id();
+        $requestId = current_request_id();
+        $meta = [
+            'event_id' => $eventId,
+            'request_id' => $requestId,
+            'request_audit_event_id' => (string)($_SERVER['APP_AUDIT_EVENT_ID'] ?? ''),
+            'logged_at' => date('c'),
+        ];
+
+        $normalizeValues = static function ($value) use ($meta) {
+            if ($value === null) {
+                return ['_meta' => $meta];
+            }
+            if (is_array($value)) {
+                if (!isset($value['_meta'])) {
+                    $value['_meta'] = $meta;
+                }
+                return $value;
+            }
+            return [
+                'value' => (string)$value,
+                '_meta' => $meta,
+            ];
+        };
         
         $query = "INSERT INTO audit_log (user_id, action, entity_type, entity_id, old_values, new_values, ip_address, user_agent) 
                   VALUES (:user_id, :action, :entity_type, :entity_id, :old_values, :new_values, :ip_address, :user_agent)";
@@ -802,13 +947,15 @@ function log_audit($user_id, $action, $entity_type = null, $entity_id = null, $o
             ':action' => $action,
             ':entity_type' => $entity_type,
             ':entity_id' => $entity_id,
-            ':old_values' => $old_values ? json_encode($old_values) : null,
-            ':new_values' => $new_values ? json_encode($new_values) : null,
+            ':old_values' => json_encode($normalizeValues($old_values)),
+            ':new_values' => json_encode($normalizeValues($new_values)),
             ':ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
             ':user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null
         ]);
+        return $eventId;
     } catch(Exception $e) {
         error_log("Audit log error: " . $e->getMessage());
+        return null;
     }
 }
 ?>

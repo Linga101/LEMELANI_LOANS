@@ -1,0 +1,19 @@
+{
+  "name": "lemelani-workers",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Node background workers for Lemelani Loans",
+  "main": "src/index.js",
+  "scripts": {
+    "worker:reminders": "node src/reminders_worker.js",
+    "worker:reminders:once": "node src/reminders_worker.js --once"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "mysql2": "^3.11.5"
+  }
+}
+

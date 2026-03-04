@@ -30,6 +30,12 @@ This folder contains the integrated **Malawi loan lending** schema used by Lemel
    source c:/xampp/htdocs/LEMELANI_LOANS/database/migrations/20260303_enable_digital_account_channels.sql
    ```
 
+5. To enable Node worker idempotency tracking:
+
+   ```sql
+   source c:/xampp/htdocs/LEMELANI_LOANS/database/migrations/20260304_add_worker_job_runs.sql
+   ```
+
 ## Main tables
 
 | Table | Purpose |

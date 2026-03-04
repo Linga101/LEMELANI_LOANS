@@ -5,6 +5,12 @@ require_once '../classes/Loan.php';
 // Require admin role
 require_role(['admin', 'manager']);
 
+// Hybrid rollout: route admin loans UI to Next.js when enabled.
+$nextAdminLoansUrl = nextjs_url('/admin/loans');
+if (feature_enabled('nextjs_admin_loans') && $nextAdminLoansUrl !== '') {
+    redirect($nextAdminLoansUrl);
+}
+
 $database = new Database();
 $db = $database->getConnection();
 $loan_obj = new Loan($db);

@@ -5,6 +5,12 @@ require_once '../classes/Payment.php';
 // Require admin role
 require_role(['admin', 'manager']);
 
+// Hybrid rollout: route admin payments UI to Next.js when enabled.
+$nextAdminPaymentsUrl = nextjs_url('/admin/payments');
+if (feature_enabled('nextjs_admin_payments') && $nextAdminPaymentsUrl !== '') {
+    redirect($nextAdminPaymentsUrl);
+}
+
 $database = new Database();
 $db = $database->getConnection();
 $payment = new Payment($db);

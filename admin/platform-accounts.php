@@ -4,6 +4,12 @@ require_once '../classes/Loan.php';
 
 require_role(['admin', 'manager']);
 
+// Hybrid rollout: route admin platform accounts UI to Next.js when enabled.
+$nextAdminPlatformAccountsUrl = nextjs_url('/admin/platform-accounts');
+if (feature_enabled('nextjs_admin_platform_accounts') && $nextAdminPlatformAccountsUrl !== '') {
+    redirect($nextAdminPlatformAccountsUrl);
+}
+
 $database = new Database();
 $db = $database->getConnection();
 $loan = new Loan($db);

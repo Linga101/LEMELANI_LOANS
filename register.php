@@ -1,6 +1,12 @@
 <?php
 require_once 'config/config.php';
 
+// Hybrid rollout: route register UI to Next.js when enabled.
+$nextRegisterUrl = nextjs_url('/register');
+if (feature_enabled('nextjs_auth') && $nextRegisterUrl !== '') {
+    redirect($nextRegisterUrl);
+}
+
 // Redirect if already logged in
 if (is_logged_in()) {
     redirect('/dashboard.php');
@@ -57,29 +63,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $selfie_path = null;
     $id_document_path = null;
 
-    // helper for base64->file
-    function save_base64_image($data, $dir, $prefix) {
-        if (preg_match('/^data:image\/([^;]+);base64,(.+)$/', $data, $m)) {
-            $ext = strtolower($m[1]);
-            if (!in_array($ext, ['jpg', 'jpeg', 'png'], true)) {
-                return null;
-            }
-            $base64 = $m[2];
-            $decoded = base64_decode($base64);
-            if ($decoded === false) return null;
-            $name = uniqid() . "_{$prefix}." . $ext;
-            if (file_put_contents($dir . $name, $decoded) !== false) {
-                return $name;
-            }
-        }
-        return null;
-    }
-
     // selfie
     if (!empty($_POST['selfie_data'])) {
-        $saved = save_base64_image($_POST['selfie_data'], SELFIE_UPLOAD_DIR, 'selfie');
+        $saved = storage_save_base64_file($_POST['selfie_data'], 'selfies', 'selfie', ['jpg', 'jpeg', 'png']);
         if ($saved) {
-            $selfie_path = 'selfies/' . $saved;
+            $selfie_path = $saved;
         } else {
             $errors[] = "Invalid selfie image data";
         }
@@ -92,9 +80,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($_FILES['selfie']['size'] > 5000000) {
             $errors[] = "Selfie file too large (max 5MB)";
         } else {
-            $selfie_name = uniqid() . '_selfie.' . $selfie_ext;
-            if (move_uploaded_file($_FILES['selfie']['tmp_name'], SELFIE_UPLOAD_DIR . $selfie_name)) {
-                $selfie_path = 'selfies/' . $selfie_name;
+            $saved = storage_save_uploaded_file($_FILES['selfie']['tmp_name'], 'selfies', 'selfie', $selfie_ext);
+            if ($saved !== null) {
+                $selfie_path = $saved;
             } else {
                 $errors[] = "Failed to upload selfie";
             }
@@ -105,9 +93,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // id document
     if (!empty($_POST['id_document_data'])) {
-        $saved = save_base64_image($_POST['id_document_data'], ID_UPLOAD_DIR, 'id');
+        $saved = storage_save_base64_file($_POST['id_document_data'], 'ids', 'id', ['jpg', 'jpeg', 'png']);
         if ($saved) {
-            $id_document_path = 'ids/' . $saved;
+            $id_document_path = $saved;
         } else {
             $errors[] = "Invalid ID document image data";
         }
@@ -119,9 +107,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($_FILES['id_document']['size'] > 5000000) {
             $errors[] = "ID document file too large (max 5MB)";
         } else {
-            $id_name = uniqid() . '_id.' . $id_ext;
-            if (move_uploaded_file($_FILES['id_document']['tmp_name'], ID_UPLOAD_DIR . $id_name)) {
-                $id_document_path = 'ids/' . $id_name;
+            $saved = storage_save_uploaded_file($_FILES['id_document']['tmp_name'], 'ids', 'id', $id_ext);
+            if ($saved !== null) {
+                $id_document_path = $saved;
             } else {
                 $errors[] = "Failed to upload ID document";
             }
