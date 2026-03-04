@@ -6,7 +6,9 @@
   "main": "src/index.js",
   "scripts": {
     "worker:reminders": "node src/reminders_worker.js",
-    "worker:reminders:once": "node src/reminders_worker.js --once"
+    "worker:reminders:once": "node src/reminders_worker.js --once",
+    "worker:scoring-refresh": "node src/scoring_refresh_worker.js",
+    "worker:scoring-refresh:once": "node src/scoring_refresh_worker.js --once"
   },
   "engines": {
     "node": ">=18"
@@ -16,4 +18,3 @@
     "mysql2": "^3.11.5"
   }
 }
-

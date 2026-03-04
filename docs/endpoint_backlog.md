@@ -90,7 +90,7 @@ Status legend:
 | Worker/API | Source behavior | Status |
 |---|---|---|
 | Reminders/escalations | overdue reminders, notifications | partial |
-| Scoring refresh batch | credit scoring recalculation | next |
+| Scoring refresh batch | credit scoring recalculation | partial |
 | Reconciliation/import jobs | payment imports/matching | next |
 | Webhook ingestion APIs | mobile money/card provider callbacks | next |
 
