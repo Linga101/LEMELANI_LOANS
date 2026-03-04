@@ -80,6 +80,18 @@ From project `.env`:
 2. Switch to `WORKER_REMINDERS_DRY_RUN=false` in staging.
 3. Schedule every 1-5 minutes in production process manager.
 
+## Storage migration helper
+
+To seed object storage mirror path from existing local files:
+
+```powershell
+# Dry-run
+php scripts/migrate_storage_to_object.php
+
+# Apply copy
+php scripts/migrate_storage_to_object.php --apply
+```
+
 ## Webhook ingestion scaffold
 
 - Endpoint: `POST /api/v1/integrations/webhooks/{provider}`

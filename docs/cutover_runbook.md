@@ -37,6 +37,25 @@ Run:
 powershell -ExecutionPolicy Bypass -File scripts/cutover_readiness.ps1
 ```
 
+## Profile toggles
+
+Use predefined flag profiles:
+
+```powershell
+# Preview only
+powershell -ExecutionPolicy Bypass -File scripts/set_cutover_profile.ps1 -Profile customer_full
+
+# Apply to .env
+powershell -ExecutionPolicy Bypass -File scripts/set_cutover_profile.ps1 -Profile customer_full -Apply
+```
+
+Available profiles:
+- `legacy`
+- `customer_full`
+- `admin_full`
+- `full_cutover`
+- `rollback`
+
 Target for full cutover:
 - Customer cutover ready: `YES`
 - Admin cutover ready: `YES`
@@ -67,4 +86,3 @@ Only remove legacy PHP views when all are true:
 2. No P0/P1 parity issues open.
 3. No worker ingestion/reconciliation incidents unresolved.
 4. Audit/report outputs validated against historical baseline.
-

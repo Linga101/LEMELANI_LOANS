@@ -126,10 +126,11 @@ define('PRIVATE_STORAGE_PATH', ROOT_PATH . '/storage/private/');
 define('ID_UPLOAD_DIR', PRIVATE_STORAGE_PATH . 'ids/');
 define('SELFIE_UPLOAD_DIR', PRIVATE_STORAGE_PATH . 'selfies/');
 define('FILE_STORAGE_BACKEND', strtolower((string)(getenv('FILE_STORAGE_BACKEND') ?: 'local')));
-define('OBJECT_STORAGE_LOCAL_MIRROR_PATH', ROOT_PATH . '/storage/object/');
+define('OBJECT_STORAGE_PATH', rtrim((string)(getenv('OBJECT_STORAGE_PATH') ?: (ROOT_PATH . '/storage/object/')), '/\\') . DIRECTORY_SEPARATOR);
+define('OBJECT_STORAGE_PUBLIC_BASE_URL', rtrim((string)(getenv('OBJECT_STORAGE_PUBLIC_BASE_URL') ?: ''), '/'));
 
 // Create storage directories if they don't exist
-foreach ([UPLOAD_PATH, ID_UPLOAD_DIR, SELFIE_UPLOAD_DIR, OBJECT_STORAGE_LOCAL_MIRROR_PATH] as $dir) {
+foreach ([UPLOAD_PATH, ID_UPLOAD_DIR, SELFIE_UPLOAD_DIR, OBJECT_STORAGE_PATH] as $dir) {
     if (!file_exists($dir)) {
         mkdir($dir, 0755, true);
     }
@@ -850,9 +851,166 @@ function storage_normalize_relative_path($relativePath) {
     return ltrim($clean, '/');
 }
 
+function storage_is_truthy($value, $default = false) {
+    if ($value === null || $value === false || trim((string)$value) === '') {
+        return (bool)$default;
+    }
+    return in_array(strtolower(trim((string)$value)), ['1', 'true', 'yes', 'on'], true);
+}
+
+function storage_object_provider() {
+    return strtolower(trim((string)(getenv('OBJECT_STORAGE_PROVIDER') ?: 'local_mirror')));
+}
+
+function storage_object_key($relativePath) {
+    $relativePath = storage_normalize_relative_path($relativePath);
+    $prefix = trim((string)(getenv('OBJECT_STORAGE_S3_KEY_PREFIX') ?: ''), '/');
+    if ($prefix === '') {
+        return $relativePath;
+    }
+    return $prefix . '/' . $relativePath;
+}
+
+function storage_object_local_mirror_enabled() {
+    return storage_is_truthy(getenv('OBJECT_STORAGE_WRITE_LOCAL_MIRROR'), true);
+}
+
+function storage_object_require_remote() {
+    return storage_is_truthy(getenv('OBJECT_STORAGE_REQUIRE_REMOTE'), false);
+}
+
+function storage_object_s3_client() {
+    static $initialized = false;
+    static $client = null;
+
+    if ($initialized) {
+        return $client;
+    }
+    $initialized = true;
+
+    if (storage_object_provider() !== 's3') {
+        return null;
+    }
+    if (!class_exists('\Aws\S3\S3Client')) {
+        error_log('S3 storage provider selected but Aws\\S3\\S3Client is unavailable. Install aws/aws-sdk-php via Composer.');
+        return null;
+    }
+
+    $bucket = trim((string)(getenv('OBJECT_STORAGE_S3_BUCKET') ?: ''));
+    if ($bucket === '') {
+        error_log('S3 storage provider selected but OBJECT_STORAGE_S3_BUCKET is not set.');
+        return null;
+    }
+
+    $region = trim((string)(getenv('OBJECT_STORAGE_S3_REGION') ?: 'us-east-1'));
+    $endpoint = trim((string)(getenv('OBJECT_STORAGE_S3_ENDPOINT') ?: ''));
+    $key = trim((string)(getenv('OBJECT_STORAGE_S3_KEY') ?: ''));
+    $secret = trim((string)(getenv('OBJECT_STORAGE_S3_SECRET') ?: ''));
+    $pathStyle = storage_is_truthy(getenv('OBJECT_STORAGE_S3_PATH_STYLE'), true);
+
+    $config = [
+        'version' => 'latest',
+        'region' => $region,
+    ];
+    if ($endpoint !== '') {
+        $config['endpoint'] = $endpoint;
+    }
+    $config['use_path_style_endpoint'] = $pathStyle;
+
+    if ($key !== '' && $secret !== '') {
+        $config['credentials'] = [
+            'key' => $key,
+            'secret' => $secret,
+        ];
+    }
+
+    try {
+        $client = new \Aws\S3\S3Client($config);
+    } catch (Throwable $e) {
+        error_log('S3 client initialization failed: ' . $e->getMessage());
+        $client = null;
+    }
+
+    return $client;
+}
+
+function storage_object_s3_bucket() {
+    return trim((string)(getenv('OBJECT_STORAGE_S3_BUCKET') ?: ''));
+}
+
+function storage_write_local_file($relativePath, $bytes) {
+    $relativePath = storage_normalize_relative_path($relativePath);
+    if ($relativePath === '') {
+        return false;
+    }
+    $destination = rtrim(OBJECT_STORAGE_PATH, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+    $destinationDir = dirname($destination);
+    if (!is_dir($destinationDir) && !mkdir($destinationDir, 0755, true) && !is_dir($destinationDir)) {
+        return false;
+    }
+    return file_put_contents($destination, $bytes) !== false;
+}
+
+function storage_object_upload_bytes($relativePath, $bytes, $contentType = 'application/octet-stream') {
+    if (storage_object_provider() !== 's3') {
+        return false;
+    }
+
+    $client = storage_object_s3_client();
+    $bucket = storage_object_s3_bucket();
+    if (!$client || $bucket === '') {
+        return false;
+    }
+
+    try {
+        $client->putObject([
+            'Bucket' => $bucket,
+            'Key' => storage_object_key($relativePath),
+            'Body' => $bytes,
+            'ContentType' => $contentType,
+        ]);
+        return true;
+    } catch (Throwable $e) {
+        error_log('S3 upload failed for ' . $relativePath . ': ' . $e->getMessage());
+        return false;
+    }
+}
+
+function storage_object_download_to_temp($relativePath) {
+    if (storage_object_provider() !== 's3') {
+        return null;
+    }
+
+    $client = storage_object_s3_client();
+    $bucket = storage_object_s3_bucket();
+    if (!$client || $bucket === '') {
+        return null;
+    }
+
+    try {
+        $result = $client->getObject([
+            'Bucket' => $bucket,
+            'Key' => storage_object_key($relativePath),
+        ]);
+        $body = (string)$result['Body'];
+        $tmp = tempnam(sys_get_temp_dir(), 'lml_obj_');
+        if ($tmp === false) {
+            return null;
+        }
+        if (file_put_contents($tmp, $body) === false) {
+            @unlink($tmp);
+            return null;
+        }
+        return $tmp;
+    } catch (Throwable $e) {
+        error_log('S3 download failed for ' . $relativePath . ': ' . $e->getMessage());
+        return null;
+    }
+}
+
 function storage_base_path_for_backend() {
     if (FILE_STORAGE_BACKEND === 'object') {
-        return rtrim(OBJECT_STORAGE_LOCAL_MIRROR_PATH, '/\\') . DIRECTORY_SEPARATOR;
+        return rtrim(OBJECT_STORAGE_PATH, '/\\') . DIRECTORY_SEPARATOR;
     }
     return rtrim(PRIVATE_STORAGE_PATH, '/\\') . DIRECTORY_SEPARATOR;
 }
@@ -861,6 +1019,18 @@ function storage_resolve_document_path($relativePath) {
     $relativePath = storage_normalize_relative_path($relativePath);
     if ($relativePath === '') {
         return null;
+    }
+
+    if (FILE_STORAGE_BACKEND === 'object') {
+        $objectLocalCandidate = rtrim(OBJECT_STORAGE_PATH, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+        if (is_file($objectLocalCandidate)) {
+            return $objectLocalCandidate;
+        }
+
+        $remoteTemp = storage_object_download_to_temp($relativePath);
+        if ($remoteTemp !== null) {
+            return $remoteTemp;
+        }
     }
 
     $candidates = [
@@ -887,6 +1057,29 @@ function storage_save_uploaded_file($tmpPath, $folder, $prefix, $extension) {
 
     $fileName = uniqid() . '_' . trim((string)$prefix, '_') . '.' . $extension;
     $relativePath = $folder . '/' . $fileName;
+
+    if (FILE_STORAGE_BACKEND === 'object') {
+        $bytes = file_get_contents($tmpPath);
+        if ($bytes === false) {
+            return null;
+        }
+        $contentType = function_exists('mime_content_type') ? ((string)mime_content_type($tmpPath) ?: 'application/octet-stream') : 'application/octet-stream';
+
+        $remoteSaved = storage_object_upload_bytes($relativePath, $bytes, $contentType);
+        $mirrorSaved = false;
+        if (storage_object_local_mirror_enabled()) {
+            $mirrorSaved = storage_write_local_file($relativePath, $bytes);
+        }
+
+        if (storage_object_require_remote() && !$remoteSaved) {
+            return null;
+        }
+        if ($remoteSaved || $mirrorSaved) {
+            return $relativePath;
+        }
+        return null;
+    }
+
     $destination = storage_base_path_for_backend() . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
     $destinationDir = dirname($destination);
 
@@ -923,6 +1116,30 @@ function storage_save_base64_file($dataUri, $folder, $prefix, array $allowedExt 
 
     $fileName = uniqid() . '_' . trim((string)$prefix, '_') . '.' . $ext;
     $relativePath = $folder . '/' . $fileName;
+
+    if (FILE_STORAGE_BACKEND === 'object') {
+        $mimeMap = [
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'pdf' => 'application/pdf',
+        ];
+        $contentType = $mimeMap[$ext] ?? 'application/octet-stream';
+        $remoteSaved = storage_object_upload_bytes($relativePath, $decoded, $contentType);
+        $mirrorSaved = false;
+        if (storage_object_local_mirror_enabled()) {
+            $mirrorSaved = storage_write_local_file($relativePath, $decoded);
+        }
+
+        if (storage_object_require_remote() && !$remoteSaved) {
+            return null;
+        }
+        if ($remoteSaved || $mirrorSaved) {
+            return $relativePath;
+        }
+        return null;
+    }
+
     $destination = storage_base_path_for_backend() . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
     $destinationDir = dirname($destination);
 

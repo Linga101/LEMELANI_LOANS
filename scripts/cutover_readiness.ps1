@@ -10,11 +10,13 @@ function Parse-EnvFile {
     if (!(Test-Path $Path)) {
         return $map
     }
-    Get-Content $Path | ForEach-Object {
-        $line = $_.Trim()
-        if ($line -eq "" -or $line.StartsWith("#")) { return }
+
+    $lines = Get-Content $Path
+    foreach ($lineRaw in $lines) {
+        $line = $lineRaw.Trim()
+        if ($line -eq "" -or $line.StartsWith("#")) { continue }
         $idx = $line.IndexOf("=")
-        if ($idx -lt 1) { return }
+        if ($idx -lt 1) { continue }
         $k = $line.Substring(0, $idx).Trim()
         $v = $line.Substring($idx + 1).Trim()
         if (($v.StartsWith('"') -and $v.EndsWith('"')) -or ($v.StartsWith("'") -and $v.EndsWith("'"))) {
@@ -66,22 +68,22 @@ $customerGlobal = Is-Truthy (Get-FlagValue $envMap "FF_NEXTJS_CUSTOMER_ALL")
 $adminGlobal = Is-Truthy (Get-FlagValue $envMap "FF_NEXTJS_ADMIN_ALL")
 
 function Effective-Enabled {
-    param($Map, [string]$Flag, [bool]$allGlobal, [bool]$customerGlobal, [bool]$adminGlobal)
+    param($Map, [string]$Flag)
     $explicit = Get-FlagValue $Map $Flag
     if ($explicit -ne "") { return Is-Truthy $explicit }
-    if ($allGlobal) { return $true }
-    if ($Flag.StartsWith("FF_NEXTJS_ADMIN_") -and $adminGlobal) { return $true }
-    if ($Flag.StartsWith("FF_NEXTJS_") -and -not $Flag.StartsWith("FF_NEXTJS_ADMIN_") -and $customerGlobal) { return $true }
+    if ($script:allGlobal) { return $true }
+    if ($Flag.StartsWith("FF_NEXTJS_ADMIN_") -and $script:adminGlobal) { return $true }
+    if ($Flag.StartsWith("FF_NEXTJS_") -and -not $Flag.StartsWith("FF_NEXTJS_ADMIN_") -and $script:customerGlobal) { return $true }
     return $false
 }
 
 $customerEnabled = 0
 foreach ($flag in $customerFlags) {
-    if (Effective-Enabled $envMap $flag $allGlobal $customerGlobal $adminGlobal) { $customerEnabled++ }
+    if (Effective-Enabled $envMap $flag) { $customerEnabled++ }
 }
 $adminEnabled = 0
 foreach ($flag in $adminFlags) {
-    if (Effective-Enabled $envMap $flag $allGlobal $customerGlobal $adminGlobal) { $adminEnabled++ }
+    if (Effective-Enabled $envMap $flag) { $adminEnabled++ }
 }
 
 $workerDryRun = @{

@@ -8,7 +8,15 @@ This project now supports basic feature-flag and URL helpers for phased Next.js 
   - Example: `http://localhost:3000`
 - `FILE_STORAGE_BACKEND`
   - `local` (default) or `object`
-  - `object` currently uses local object-mirror path for rollout safety
+  - `object` supports local mirror and optional S3-compatible upload/download path
+- `OBJECT_STORAGE_PROVIDER`
+  - `local_mirror` (default) or `s3`
+- `OBJECT_STORAGE_PATH`
+  - local mirror path for object mode
+- `OBJECT_STORAGE_WRITE_LOCAL_MIRROR`
+  - keep local mirror copy when object backend is enabled
+- `OBJECT_STORAGE_REQUIRE_REMOTE`
+  - fail writes unless remote object upload succeeds
 - `FF_<FLAG_NAME>`
   - Truthy values: `1`, `true`, `yes`, `on`
   - Falsy values: `0`, `false`, `no`, `off`

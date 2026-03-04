@@ -15,7 +15,7 @@ Status legend:
 | CSRF bridge | `GET /security/csrf-token` | Used by SPA mutations | implemented | Session cookie + CSRF header flow |
 | Auth session contract | Cookie session across endpoints | `login.php`, protected pages | implemented | `auth/login`, `auth/me`, `auth/logout` |
 | Observability | `X-Request-Id` response header | All API requests | implemented | Request ID emitted in bootstrap |
-| Upload externalization | storage adapter + object backend toggle | `register.php`, `view-document.php` | partial | Adapter + env toggle added (`FILE_STORAGE_BACKEND`), object provider integration still pending |
+| Upload externalization | storage adapter + object backend toggle | `register.php`, `view-document.php` | implemented | Adapter supports local + S3-compatible provider path; migration utility added (`scripts/migrate_storage_to_object.php`) |
 
 ## Phase 1 Auth + Account APIs
 
@@ -89,9 +89,9 @@ Status legend:
 
 | Worker/API | Source behavior | Status |
 |---|---|---|
-| Reminders/escalations | overdue reminders, notifications | partial |
-| Scoring refresh batch | credit scoring recalculation | partial |
-| Reconciliation/import jobs | payment imports/matching | partial |
+| Reminders/escalations | overdue reminders, notifications | implemented |
+| Scoring refresh batch | credit scoring recalculation | implemented |
+| Reconciliation/import jobs | payment imports/matching | implemented |
 | Webhook ingestion APIs | mobile money/card provider callbacks | implemented |
 
 ## Phase 6 Cutover + Decommission
@@ -101,7 +101,7 @@ Status legend:
 | Per-page feature flags for customer/admin | implemented (major pages) |
 | Route traffic to Next.js pages gradually | in progress | Added global cutover flags (`FF_NEXTJS_ALL`, customer/admin global overrides) + readiness script |
 | Keep PHP fallback + rollback toggles | implemented |
-| Remove PHP views after parity + 2 releases | next |
+| Remove PHP views after parity + 2 releases | next | Automated gate script added (`scripts/decommission_gate.ps1`) with release marker config |
 
 ## Immediate Sprint Recommendation
 
@@ -109,6 +109,7 @@ Status legend:
    - Validate response contract parity against OpenAPI for admin support endpoints.
 2. Run smoke tests in CI:
    - `scripts/api_smoke_tests.ps1`.
+   - `scripts/validate_production_env.ps1`.
 3. Next.js consumption:
    - auth -> dashboard -> loans -> repayments -> profile -> notifications.
 4. Storage migration:
