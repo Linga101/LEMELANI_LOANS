@@ -306,6 +306,47 @@ function nextjs_url($path = '') {
     if ($base === '') {
         return '';
     }
+
+    $requireHealthyRaw = strtolower(trim((string)(getenv('NEXTJS_REQUIRE_HEALTHY') ?: 'true')));
+    $requireHealthy = !in_array($requireHealthyRaw, ['0', 'false', 'no', 'off'], true);
+    if ($requireHealthy) {
+        static $baseHealth = [];
+        if (!array_key_exists($base, $baseHealth)) {
+            $parts = parse_url($base);
+            $host = $parts['host'] ?? '';
+            $scheme = strtolower((string)($parts['scheme'] ?? 'http'));
+            $port = isset($parts['port'])
+                ? (int)$parts['port']
+                : ($scheme === 'https' ? 443 : 80);
+
+            $healthy = false;
+            if ($host !== '' && $port > 0 && $port <= 65535) {
+                $timeoutMs = (int)(getenv('NEXTJS_HEALTHCHECK_TIMEOUT_MS') ?: 250);
+                if ($timeoutMs < 50) {
+                    $timeoutMs = 50;
+                } elseif ($timeoutMs > 3000) {
+                    $timeoutMs = 3000;
+                }
+                $timeoutSeconds = $timeoutMs / 1000;
+                $transportHost = $scheme === 'https' ? ('ssl://' . $host) : $host;
+
+                $errno = 0;
+                $errstr = '';
+                $socket = @fsockopen($transportHost, $port, $errno, $errstr, $timeoutSeconds);
+                if (is_resource($socket)) {
+                    fclose($socket);
+                    $healthy = true;
+                }
+            }
+
+            $baseHealth[$base] = $healthy;
+        }
+
+        if ($baseHealth[$base] !== true) {
+            return '';
+        }
+    }
+
     $path = ltrim((string)$path, '/');
     return $path === '' ? $base : ($base . '/' . $path);
 }

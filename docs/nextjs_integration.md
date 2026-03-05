@@ -6,6 +6,12 @@ This project now supports basic feature-flag and URL helpers for phased Next.js 
 
 - `NEXTJS_BASE_URL`
   - Example: `http://localhost:3000`
+- `NEXTJS_REQUIRE_HEALTHY`
+  - default: `true`
+  - when `true`, PHP only redirects to Next.js if the target host/port is reachable
+- `NEXTJS_HEALTHCHECK_TIMEOUT_MS`
+  - default: `250`
+  - TCP connectivity check timeout used by `nextjs_url()`
 - `FILE_STORAGE_BACKEND`
   - `local` (default) or `object`
   - `object` supports local mirror and optional S3-compatible upload/download path
